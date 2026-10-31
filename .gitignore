@@ -1,0 +1,23 @@
+# Git ignore
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Environment & Config
+.env
+.env.local
+
+# Docker volume data
+data/
+mysql_data/
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary demo captures
+demo-artifacts/temp/
+*.pcap

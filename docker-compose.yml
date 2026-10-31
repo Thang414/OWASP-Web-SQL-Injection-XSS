@@ -1,0 +1,75 @@
+services:
+  # 1. Cơ sở dữ liệu MySQL
+  db:
+    image: mariadb:10.5
+    container_name: websec_mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secure_pass_123
+      MYSQL_DATABASE: ecommerce_db
+      MYSQL_USER: db_user
+      MYSQL_PASSWORD: P@ssword123
+    volumes:
+      - ./lab-environment/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - websec_net
+
+  # 2. Ứng dụng Web TMĐT Chứa Lỗ Hổng (Vulnerable App)
+  web-vulnerable:
+    image: php:8.1-apache
+    container_name: websec_app_vulnerable
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./lab-environment/app-vulnerable/src:/var/www/html
+    environment:
+      - DB_HOST=db
+      - DB_NAME=ecommerce_db
+      - DB_USER=db_user
+      - DB_PASS=P@ssword123
+    depends_on:
+      - db
+    command: >
+      bash -c "docker-php-ext-install mysqli pdo pdo_mysql && apache2-foreground"
+    networks:
+      - websec_net
+
+  # 3. Ứng dụng Web TMĐT Đã Vá Lỗ Hổng (Secured App)
+  web-secured:
+    image: php:8.1-apache
+    container_name: websec_app_secured
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - ./lab-environment/app-secured/src:/var/www/html
+    environment:
+      - DB_HOST=db
+      - DB_NAME=ecommerce_db
+      - DB_USER=db_user
+      - DB_PASS=P@ssword123
+    depends_on:
+      - db
+    command: >
+      bash -c "docker-php-ext-install mysqli pdo pdo_mysql && apache2-foreground"
+    networks:
+      - websec_net
+
+  # 4. Attacker Server - Lắng nghe hứng Cookie (Hỗ trợ Demo XSS cướp phiên)
+  cookie-stealer:
+    image: python:3.9-slim
+    container_name: websec_cookie_stealer
+    restart: always
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./exploits/xss/cookie_stealer_server:/app
+    working_dir: /app
+    command: python app.py
+    networks:
+      - websec_net
+
+networks:
+  websec_net:
+    driver: bridge

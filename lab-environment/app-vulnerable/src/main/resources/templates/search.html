@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Kết quả Tìm kiếm - UTH E-Shop (Vulnerable Node.js)</title>
+    <title>Kết quả Tìm kiếm - UTH E-Shop (Vulnerable Java Spring Boot)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
         header { background: #d9534f; color: white; padding: 15px 30px; }
@@ -20,45 +20,40 @@
 <body>
 
 <header>
-    <h2>🛒 UTH E-Shop - Kết Quả Tìm Kiếm (Node.js)</h2>
+    <h2>🛒 UTH E-Shop - Kết Quả Tìm Kiếm (Java Spring Boot)</h2>
 </header>
 
 <div class="container">
     <p><a href="/">⬅ Về Trang chủ</a></p>
 
     <form class="search-box" action="/search" method="GET">
-        <input type="text" name="keyword" value="<%= keyword %>" placeholder="Nhập tên sản phẩm...">
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="Nhập tên sản phẩm...">
         <button type="submit">Tìm kiếm</button>
     </form>
 
     <!-- LỖ HỔNG REFLECTED XSS:
-         Render thô biến keyword ra giao diện bằng <%- %> thay vì mã hóa HTML entities -->
-    <h3>Kết quả tìm kiếm cho: <span><%- keyword %></span></h3>
+         Sử dụng th:utext (Unescaped Text) thay vì th:text, khiến chuỗi JavaScript độc hại thực thi trực tiếp trên trình duyệt -->
+    <h3>Kết quả tìm kiếm cho: <span th:utext="${keyword}"></span></h3>
 
     <div class="debug-sql">
-        <strong style="color: #ecc94b;">🔍 Câu lệnh SQL thực thi trong Node.js:</strong><br>
-        <code><%= sql %></code>
+        <strong style="color: #ecc94b;">🔍 Câu lệnh SQL thực thi trong Java Backend:</strong><br>
+        <code th:text="${sql}"></code>
     </div>
 
-    <% if (sqlError) { %>
-        <div class="error-sql">
-            <strong>Lỗi MySQL:</strong> <%= sqlError %>
-        </div>
-    <% } %>
+    <div class="error-sql" th:if="${sqlError != null}">
+        <strong>Lỗi MySQL:</strong> <span th:text="${sqlError}"></span>
+    </div>
 
-    <% if (products && products.length > 0) { %>
-        <% products.forEach(function(p) { %>
-            <div class="product-card">
-                <h4><%= p.name %></h4>
-                <p><%= p.description %></p>
-                <div class="price">
-                    <%= isNaN(Number(p.price)) ? p.price : Number(p.price).toLocaleString('vi-VN') + ' VNĐ' %>
-                </div>
-            </div>
-        <% }); %>
-    <% } else if (keyword !== '') { %>
+    <div th:if="${products != null and not #lists.isEmpty(products)}">
+        <div class="product-card" th:each="p : ${products}">
+            <h4 th:text="${p.name}"></h4>
+            <p th:text="${p.description}"></p>
+            <div class="price" th:text="${p.formattedPrice}"></div>
+        </div>
+    </div>
+    <div th:if="${products != null and #lists.isEmpty(products) and !keyword.isEmpty()}">
         <p>Không tìm thấy sản phẩm nào phù hợp!</p>
-    <% } %>
+    </div>
 </div>
 
 </body>

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title><%= product ? product.name : 'Chi tiết sản phẩm' %> - UTH E-Shop (Vulnerable Node.js)</title>
+    <title th:text="${product != null ? product.name : 'Chi tiết sản phẩm'} + ' - UTH E-Shop (Vulnerable Java)'"></title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
         header { background: #d9534f; color: white; padding: 15px 30px; }
@@ -23,31 +23,29 @@
 <body>
 
 <header>
-    <h2>🛒 UTH E-Shop - Chi Tiết Sản Phẩm & Đánh Giá (Node.js)</h2>
+    <h2>🛒 UTH E-Shop - Chi Tiết Sản Phẩm & Đánh Giá (Java Spring Boot)</h2>
 </header>
 
 <div class="container">
     <p><a href="/">⬅ Về Danh sách sản phẩm</a></p>
 
-    <% if (product) { %>
+    <div th:if="${product != null}">
         <div class="product-detail">
-            <h2><%= product.name %></h2>
-            <p><strong>Danh mục:</strong> <%= product.category %></p>
-            <div class="price">
-                <%= isNaN(Number(product.price)) ? product.price : Number(product.price).toLocaleString('vi-VN') + ' VNĐ' %>
-            </div>
-            <p><%= product.description %></p>
+            <h2 th:text="${product.name}"></h2>
+            <p><strong>Danh mục:</strong> <span th:text="${product.category}"></span></p>
+            <div class="price" th:text="${product.formattedPrice}"></div>
+            <p th:text="${product.description}"></p>
         </div>
 
         <div class="comment-section">
             <h3>Đánh giá từ khách hàng</h3>
 
             <!-- Form gửi bình luận dính Stored XSS -->
-            <form method="POST" action="/product?id=<%= productId %>">
-                <input type="hidden" name="product_id" value="<%= productId %>">
+            <form method="POST" th:action="@{'/product?id=' + ${productId}}">
+                <input type="hidden" name="product_id" th:value="${productId}">
                 <div class="form-group">
                     <label>Tên của bạn:</label>
-                    <input type="text" name="author" value="<%= user ? user.username : 'Khách hàng' %>" required>
+                    <input type="text" name="author" th:value="${user != null ? user.username : 'Khách hàng'}" required>
                 </div>
                 <div class="form-group">
                     <label>Nội dung bình luận / Đánh giá:</label>
@@ -59,25 +57,24 @@
             <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
 
             <h4>Các bình luận đã đăng:</h4>
-            <% if (comments && comments.length > 0) { %>
-                <% comments.forEach(function(c) { %>
-                    <div class="comment-card">
-                        <div class="comment-author">
-                            <%= c.author %> <span class="comment-time">(<%= new Date(c.created_at).toLocaleString('vi-VN') %>)</span>:
-                        </div>
-                        <!-- LỖ HỔNG STORED XSS:
-                             In nội dung comment ra giao diện trực tiếp bằng <%- %> mà không mã hóa HTML entities.
-                             Nếu comment chứa mã <script> cướp cookie, bất kỳ ai xem trang này cũng sẽ bị kích hoạt mã độc! -->
-                        <div class="comment-body"><%- c.content %></div>
+            <div th:if="${comments != null and not #lists.isEmpty(comments)}">
+                <div class="comment-card" th:each="c : ${comments}">
+                    <div class="comment-author">
+                        <span th:text="${c.author}"></span> <span class="comment-time" th:text="'(' + ${c.createdAt} + ')'"></span>:
                     </div>
-                <% }); %>
-            <% } else { %>
+                    <!-- LỖ HỔNG STORED XSS:
+                         Sử dụng th:utext (Unescaped) khiến thẻ <script> cướp cookie trong CSDL chạy tự động trên trình duyệt nạn nhân -->
+                    <div class="comment-body" th:utext="${c.content}"></div>
+                </div>
+            </div>
+            <div th:if="${comments == null or #lists.isEmpty(comments)}">
                 <p>Chưa có bình luận nào cho sản phẩm này.</p>
-            <% } %>
+            </div>
         </div>
-    <% } else { %>
+    </div>
+    <div th:if="${product == null}">
         <p>Sản phẩm không tồn tại!</p>
-    <% } %>
+    </div>
 </div>
 
 </body>

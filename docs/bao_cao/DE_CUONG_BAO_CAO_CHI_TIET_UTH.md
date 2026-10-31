@@ -49,8 +49,8 @@ Dành cho **Thành viên 3 (Kỹ sư Tài liệu / Báo cáo)** sử dụng đ�
    - 3.2.4. Thực nghiệm Reflected XSS qua tham số tìm kiếm.
    - 3.2.5. Tấn công Stored XSS trong bình luận sản phẩm và cướp Cookie phiên làm việc.  
 3.3. Bước 3: Triển khai giải pháp phòng thủ & Khắc phục (Defense & Mitigation):
-   - 3.3.1. Chuyển đổi mã nguồn sang Node.js Parameterized Queries / Prepared Statements (mysql2).
-   - 3.3.2. Xử lý Output Encoding (Context-aware Escaping trong EJS) triệt tiêu mã XSS.
+   - 3.3.1. Chuyển đổi mã nguồn sang Java PreparedStatement (JDBC Parameterized Queries).
+   - 3.3.2. Xử lý Output Encoding (Thymeleaf Context-aware Escaping với `th:text`) triệt tiêu mã XSS.
    - 3.3.3. Bật cờ bảo mật `HttpOnly` cho Cookie và thiết lập HTTP Response Headers (CSP, X-Frame-Options).  
 3.4. Bước 4: Kiểm tra lại và đánh giá hiệu quả phòng thủ (Verification):
    - 3.4.1. Thử nghiệm lại các payload SQLi trên ứng dụng đã vá lỗi (Port 8081).
@@ -66,4 +66,4 @@ Dành cho **Thành viên 3 (Kỹ sư Tài liệu / Báo cáo)** sử dụng đ�
 ### TÀI LIỆU THAM KHẢO
 - Giáo trình An ninh mạng / An toàn thông tin.
 - Tài liệu chính thức OWASP Top 10 (https://owasp.org/Top10/).
-- Tài liệu Node.js Security Best Practices & OWASP Cheat Sheet Series.
+- Tài liệu Java & Spring Security Best Practices / OWASP Cheat Sheet Series.

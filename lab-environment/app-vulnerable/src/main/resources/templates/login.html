@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Đăng nhập - UTH E-Shop (Vulnerable Node.js)</title>
+    <title>Đăng nhập - UTH E-Shop (Vulnerable Java Spring Boot)</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 400px; }
@@ -19,9 +19,7 @@
 <div class="login-card">
     <h2 style="text-align: center; color: #d9534f;">Đăng Nhập Khách Hàng</h2>
     
-    <% if (message) { %>
-        <div class="error"><%= message %></div>
-    <% } %>
+    <div class="error" th:if="${message != null}" th:text="${message}"></div>
 
     <form method="POST" action="/login">
         <div class="form-group">

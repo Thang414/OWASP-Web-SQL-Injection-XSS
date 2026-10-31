@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Cửa Hàng TMĐT UTH (Secured App - Node.js - Cổng 8081)</title>
+    <title>Cửa Hàng TMĐT UTH (Secured App - Java Spring Boot - Cổng 8081)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
         header { background: #28a745; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
@@ -21,19 +21,20 @@
 <body>
 
 <header>
-    <h2>🛡️ UTH E-Shop (Phiên Bản ĐÃ VÁ LỖ HỔNG - Node.js - Cổng 8081)</h2>
+    <h2>🛡️ UTH E-Shop (Phiên Bản ĐÃ VÁ LỖ HỔNG - Java Spring Boot - Cổng 8081)</h2>
     <div class="user-info">
-        <% if (user) { %>
-            Xin chào, <strong><%= user.username %> (Quyền: <%= user.role %>)</strong> | 
+        <span th:if="${user != null}">
+            Xin chào, <strong th:text="${user.username} + ' (Quyền: ' + ${user.role} + ')'"></strong> | 
             <a href="/logout" style="color: white; text-decoration: underline;">Đăng xuất</a>
-        <% } else { %>
+        </span>
+        <span th:if="${user == null}">
             <a href="/login" style="color: white; text-decoration: underline;">Đăng nhập</a>
-        <% } %>
+        </span>
     </div>
 </header>
 
 <div class="banner-success">
-    ✅ HỆ THỐNG AN TOÀN: Đã áp dụng Prepared Statements (chống SQLi), EJS Output Encoding & HttpOnly Cookie + CSP (chống XSS).
+    ✅ HỆ THỐNG AN TOÀN: Đã áp dụng PreparedStatement (chống SQLi), Thymeleaf Auto-Escaping &amp; HttpOnly Cookie + CSP (chống XSS).
 </div>
 
 <div class="container">
@@ -44,16 +45,12 @@
 
     <h3>Danh sách Sản phẩm</h3>
     <div class="product-grid">
-        <% products.forEach(function(p) { %>
-            <div class="product-card">
-                <h4><a href="/product?id=<%= p.id %>"><%= p.name %></a></h4>
-                <p><%= p.description %></p>
-                <div class="price">
-                    <%= Number(p.price).toLocaleString('vi-VN') + ' VNĐ' %>
-                </div>
-                <p><a href="/product?id=<%= p.id %>">👉 Xem chi tiết & Đánh giá</a></p>
-            </div>
-        <% }); %>
+        <div class="product-card" th:each="p : ${products}">
+            <h4><a th:href="@{'/product?id=' + ${p.id}}" th:text="${p.name}"></a></h4>
+            <p th:text="${p.description}"></p>
+            <div class="price" th:text="${p.formattedPrice}"></div>
+            <p><a th:href="@{'/product?id=' + ${p.id}}">👉 Xem chi tiết & Đánh giá</a></p>
+        </div>
     </div>
 </div>
 

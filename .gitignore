@@ -1,4 +1,9 @@
 # Git ignore
+target/
+*.class
+*.jar
+*.war
+.m2/
 node_modules/
 npm-debug.log*
 .DS_Store

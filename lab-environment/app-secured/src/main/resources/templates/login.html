@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Đăng nhập - UTH E-Shop (Secured Node.js)</title>
+    <title>Đăng nhập - UTH E-Shop (Secured Java Spring Boot)</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 400px; }
@@ -19,9 +19,7 @@
 <div class="login-card">
     <h2 style="text-align: center; color: #28a745;">Đăng Nhập Bảo Mật</h2>
     
-    <% if (message) { %>
-        <div class="error"><%= message %></div>
-    <% } %>
+    <div class="error" th:if="${message != null}" th:text="${message}"></div>
 
     <form method="POST" action="/login">
         <div class="form-group">
@@ -38,7 +36,7 @@
     <div class="verify-box">
         🛡️ <strong>Kiểm thử lại phòng thủ (Bước 4):</strong><br>
         Nhập payload: <code>admin' -- </code><br>
-        👉 Kết quả: Đăng nhập thất bại hoàn toàn vì Prepared Statement trong Node.js xử lý chuỗi trên như một chuỗi username bình thường, không thể bypass logic xác thực.
+        👉 Kết quả: Đăng nhập thất bại hoàn toàn vì <code>PreparedStatement</code> trong Java coi toàn bộ chuỗi trên như một username bình thường, không thể phá vỡ logic SQL.
     </div>
 
     <p style="text-align: center; margin-top: 15px;"><a href="/" style="color: #28a745;">⬅ Quay lại Trang chủ</a></p>

@@ -14,9 +14,9 @@ services:
     networks:
       - websec_net
 
-  # 2. Ứng dụng Web TMĐT Chứa Lỗ Hổng (Vulnerable App - Node.js)
+  # 2. Ứng dụng Web TMĐT Chứa Lỗ Hổng (Vulnerable App - Java Spring Boot)
   web-vulnerable:
-    image: node:20-alpine
+    image: maven:3.9-eclipse-temurin-17-alpine
     container_name: websec_app_vulnerable
     restart: always
     ports:
@@ -24,21 +24,23 @@ services:
     working_dir: /app
     volumes:
       - ./lab-environment/app-vulnerable:/app
+      - maven_cache:/root/.m2
     environment:
-      - PORT=8080
+      - SERVER_PORT=8080
       - DB_HOST=db
+      - DB_PORT=3306
       - DB_NAME=ecommerce_db
       - DB_USER=db_user
       - DB_PASS=P@ssword123
     depends_on:
       - db
-    command: sh -c "npm install && node server.js"
+    command: mvn spring-boot:run
     networks:
       - websec_net
 
-  # 3. Ứng dụng Web TMĐT Đã Vá Lỗ Hổng (Secured App - Node.js)
+  # 3. Ứng dụng Web TMĐT Đã Vá Lỗ Hổng (Secured App - Java Spring Boot)
   web-secured:
-    image: node:20-alpine
+    image: maven:3.9-eclipse-temurin-17-alpine
     container_name: websec_app_secured
     restart: always
     ports:
@@ -46,15 +48,17 @@ services:
     working_dir: /app
     volumes:
       - ./lab-environment/app-secured:/app
+      - maven_cache:/root/.m2
     environment:
-      - PORT=8081
+      - SERVER_PORT=8081
       - DB_HOST=db
+      - DB_PORT=3306
       - DB_NAME=ecommerce_db
       - DB_USER=db_user
       - DB_PASS=P@ssword123
     depends_on:
       - db
-    command: sh -c "npm install && node server.js"
+    command: mvn spring-boot:run
     networks:
       - websec_net
 
@@ -71,6 +75,9 @@ services:
     command: python app.py
     networks:
       - websec_net
+
+volumes:
+  maven_cache:
 
 networks:
   websec_net:

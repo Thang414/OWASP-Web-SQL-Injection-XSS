@@ -9,7 +9,7 @@ Dành cho **Thành viên 3 (Kỹ sư Tài liệu / Báo cáo)** sử dụng đ�
 ### LỜI MỞ ĐẦU & DANH MỤC TỪ VIẾT TẮT
 - Lời cảm ơn thầy/cô giảng viên hướng dẫn.
 - Danh mục bảng biểu, hình vẽ.
-- Danh mục từ viết tắt: OWASP, SQLi, XSS, WAF, CSP, PDO, RDBMS, PoC...
+- Danh mục từ viết tắt: OWASP, SQLi, XSS, WAF, CSP, RDBMS, PoC...
 
 ### PHẦN 1: CƠ SỞ LÝ THUYẾT & TỔNG QUAN AN NINH MẠNG
 1.1. Bối cảnh an ninh thông tin trong kỷ nguyên số và thương mại điện tử.  
@@ -49,8 +49,8 @@ Dành cho **Thành viên 3 (Kỹ sư Tài liệu / Báo cáo)** sử dụng đ�
    - 3.2.4. Thực nghiệm Reflected XSS qua tham số tìm kiếm.
    - 3.2.5. Tấn công Stored XSS trong bình luận sản phẩm và cướp Cookie phiên làm việc.  
 3.3. Bước 3: Triển khai giải pháp phòng thủ & Khắc phục (Defense & Mitigation):
-   - 3.3.1. Chuyển đổi mã nguồn sang PDO Prepared Statements.
-   - 3.3.2. Xử lý Output Encoding với hàm `htmlspecialchars()` triệt tiêu mã XSS.
+   - 3.3.1. Chuyển đổi mã nguồn sang Node.js Parameterized Queries / Prepared Statements (mysql2).
+   - 3.3.2. Xử lý Output Encoding (Context-aware Escaping trong EJS) triệt tiêu mã XSS.
    - 3.3.3. Bật cờ bảo mật `HttpOnly` cho Cookie và thiết lập HTTP Response Headers (CSP, X-Frame-Options).  
 3.4. Bước 4: Kiểm tra lại và đánh giá hiệu quả phòng thủ (Verification):
    - 3.4.1. Thử nghiệm lại các payload SQLi trên ứng dụng đã vá lỗi (Port 8081).
@@ -66,4 +66,4 @@ Dành cho **Thành viên 3 (Kỹ sư Tài liệu / Báo cáo)** sử dụng đ�
 ### TÀI LIỆU THAM KHẢO
 - Giáo trình An ninh mạng / An toàn thông tin.
 - Tài liệu chính thức OWASP Top 10 (https://owasp.org/Top10/).
-- Tài liệu PHP PDO Security & OWASP Cheat Sheet Series.
+- Tài liệu Node.js Security Best Practices & OWASP Cheat Sheet Series.

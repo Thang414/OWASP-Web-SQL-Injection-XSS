@@ -1,20 +1,8 @@
-<?php
-require_once 'db.php';
-session_start();
-
-// Thiết lập Cookie phiên thông thường (KHÔNG bật HttpOnly -> Dễ bị XSS cướp cookie)
-if (!isset($_COOKIE['session_token']) && isset($_SESSION['username'])) {
-    setcookie("session_token", base64_encode($_SESSION['username'] . "_secret_token_123"), time() + 3600, "/");
-}
-
-$sql = "SELECT * FROM products";
-$result = $conn->query($sql);
-?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Cửa Hàng TMĐT UTH (Vulnerable App)</title>
+    <title>Cửa Hàng TMĐT UTH (Vulnerable App - Node.js)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
         header { background: #d9534f; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
@@ -28,43 +16,46 @@ $result = $conn->query($sql);
         .price { color: #d9534f; font-size: 18px; font-weight: bold; }
         a { color: #337ab7; text-decoration: none; }
         .user-info { font-size: 14px; }
+        .badge-node { background: #215732; color: #68a063; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-left: 5px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2>🛒 UTH E-Shop (Phiên Bản Demo Lỗi Bảo Mật - Cổng 8080)</h2>
+    <h2>🛒 UTH E-Shop (Phiên Bản Lỗ Hổng - Node.js - Cổng 8080)</h2>
     <div class="user-info">
-        <?php if (isset($_SESSION['username'])): ?>
-            Xin chào, <strong><?= $_SESSION['username'] ?> (Quyền: <?= $_SESSION['role'] ?>)</strong> | 
-            <a href="logout.php" style="color: white; text-decoration: underline;">Đăng xuất</a>
-        <?php else: ?>
-            <a href="login.php" style="color: white; text-decoration: underline;">Đăng nhập</a>
-        <?php endif; ?>
+        <% if (user) { %>
+            Xin chào, <strong><%= user.username %> (Quyền: <%= user.role %>)</strong> | 
+            <a href="/logout" style="color: white; text-decoration: underline;">Đăng xuất</a>
+        <% } else { %>
+            <a href="/login" style="color: white; text-decoration: underline;">Đăng nhập</a>
+        <% } %>
     </div>
 </header>
 
 <div class="banner-warning">
-    ⚠️ CẢNH BÁO LAB: Ứng dụng này đang chứa lỗ hổng bảo mật SQL Injection và XSS phục vụ nghiên cứu học phần An ninh mạng UTH.
+    ⚠️ CẢNH BÁO LAB: Ứng dụng Node.js này đang chứa lỗ hổng bảo mật SQL Injection và XSS phục vụ nghiên cứu học phần An ninh mạng UTH.
 </div>
 
 <div class="container">
     <!-- Form tìm kiếm dính Reflected XSS & SQL Injection -->
-    <form class="search-box" action="search.php" method="GET">
+    <form class="search-box" action="/search" method="GET">
         <input type="text" name="keyword" placeholder="Nhập tên sản phẩm cần tìm kiếm (VD: iPhone, Laptop...)...">
         <button type="submit">Tìm kiếm</button>
     </form>
 
     <h3>Danh sách Sản phẩm Nổi bật</h3>
     <div class="product-grid">
-        <?php while ($row = $result->fetch_assoc()): ?>
+        <% products.forEach(function(p) { %>
             <div class="product-card">
-                <h4><a href="product.php?id=<?= $row['id'] ?>"><?= $row['name'] ?></a></h4>
-                <p><?= $row['description'] ?></p>
-                <div class="price"><?= number_format($row['price'], 0, ',', '.') ?> VNĐ</div>
-                <p><a href="product.php?id=<?= $row['id'] ?>">👉 Xem chi tiết & Đánh giá</a></p>
+                <h4><a href="/product?id=<%= p.id %>"><%= p.name %></a></h4>
+                <p><%= p.description %></p>
+                <div class="price">
+                    <%= isNaN(Number(p.price)) ? p.price : Number(p.price).toLocaleString('vi-VN') + ' VNĐ' %>
+                </div>
+                <p><a href="/product?id=<%= p.id %>">👉 Xem chi tiết & Đánh giá</a></p>
             </div>
-        <?php endwhile; ?>
+        <% }); %>
     </div>
 </div>
 

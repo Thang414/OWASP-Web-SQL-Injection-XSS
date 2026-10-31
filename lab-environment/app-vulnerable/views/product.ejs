@@ -1,35 +1,8 @@
-<?php
-require_once 'db.php';
-session_start();
-
-$product_id = isset($_GET['id']) ? intval($_GET['id']) : 1;
-
-// Xử lý gửi bình luận (LỖ HỔNG STORED XSS)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $author  = $_POST['author'] ?? 'Ẩn danh';
-    $content = $_POST['content'] ?? '';
-
-    // LƯU TRỰC TIẾP VÀO CƠ SỞ DỮ LIỆU MÀ KHÔNG LỌC HOẶC SANITIZE MÃ HTML/JS
-    $sql_insert = "INSERT INTO comments (product_id, author, content) VALUES ('$product_id', '$author', '$content')";
-    $conn->query($sql_insert);
-    header("Location: product.php?id=" . $product_id);
-    exit();
-}
-
-// Lấy thông tin sản phẩm
-$product_sql = "SELECT * FROM products WHERE id = $product_id";
-$product_res = $conn->query($product_sql);
-$product = $product_res ? $product_res->fetch_assoc() : null;
-
-// Lấy danh sách bình luận
-$comment_sql = "SELECT * FROM comments WHERE product_id = $product_id ORDER BY id DESC";
-$comment_res = $conn->query($comment_sql);
-?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title><?= $product ? $product['name'] : 'Chi tiết sản phẩm' ?> - UTH E-Shop (Vulnerable)</title>
+    <title><%= product ? product.name : 'Chi tiết sản phẩm' %> - UTH E-Shop (Vulnerable Node.js)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
         header { background: #d9534f; color: white; padding: 15px 30px; }
@@ -50,28 +23,31 @@ $comment_res = $conn->query($comment_sql);
 <body>
 
 <header>
-    <h2>🛒 UTH E-Shop - Chi Tiết Sản Phẩm & Đánh Giá</h2>
+    <h2>🛒 UTH E-Shop - Chi Tiết Sản Phẩm & Đánh Giá (Node.js)</h2>
 </header>
 
 <div class="container">
-    <p><a href="index.php">⬅ Về Danh sách sản phẩm</a></p>
+    <p><a href="/">⬅ Về Danh sách sản phẩm</a></p>
 
-    <?php if ($product): ?>
+    <% if (product) { %>
         <div class="product-detail">
-            <h2><?= $product['name'] ?></h2>
-            <p><strong>Danh mục:</strong> <?= $product['category'] ?></p>
-            <div class="price"><?= number_format($product['price'], 0, ',', '.') ?> VNĐ</div>
-            <p><?= $product['description'] ?></p>
+            <h2><%= product.name %></h2>
+            <p><strong>Danh mục:</strong> <%= product.category %></p>
+            <div class="price">
+                <%= isNaN(Number(product.price)) ? product.price : Number(product.price).toLocaleString('vi-VN') + ' VNĐ' %>
+            </div>
+            <p><%= product.description %></p>
         </div>
 
         <div class="comment-section">
             <h3>Đánh giá từ khách hàng</h3>
 
             <!-- Form gửi bình luận dính Stored XSS -->
-            <form method="POST">
+            <form method="POST" action="/product?id=<%= productId %>">
+                <input type="hidden" name="product_id" value="<%= productId %>">
                 <div class="form-group">
                     <label>Tên của bạn:</label>
-                    <input type="text" name="author" value="<?= $_SESSION['username'] ?? 'Khách hàng' ?>" required>
+                    <input type="text" name="author" value="<%= user ? user.username : 'Khách hàng' %>" required>
                 </div>
                 <div class="form-group">
                     <label>Nội dung bình luận / Đánh giá:</label>
@@ -83,23 +59,25 @@ $comment_res = $conn->query($comment_sql);
             <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
 
             <h4>Các bình luận đã đăng:</h4>
-            <?php if ($comment_res && $comment_res->num_rows > 0): ?>
-                <?php while ($cmt = $comment_res->fetch_assoc()): ?>
+            <% if (comments && comments.length > 0) { %>
+                <% comments.forEach(function(c) { %>
                     <div class="comment-card">
-                        <div class="comment-author"><?= $cmt['author'] ?> <span class="comment-time">(<?= $cmt['created_at'] ?>)</span>:</div>
+                        <div class="comment-author">
+                            <%= c.author %> <span class="comment-time">(<%= new Date(c.created_at).toLocaleString('vi-VN') %>)</span>:
+                        </div>
                         <!-- LỖ HỔNG STORED XSS:
-                             In nội dung comment ra giao diện trực tiếp mà không mã hóa HTML entities.
+                             In nội dung comment ra giao diện trực tiếp bằng <%- %> mà không mã hóa HTML entities.
                              Nếu comment chứa mã <script> cướp cookie, bất kỳ ai xem trang này cũng sẽ bị kích hoạt mã độc! -->
-                        <div class="comment-body"><?= $cmt['content'] ?></div>
+                        <div class="comment-body"><%- c.content %></div>
                     </div>
-                <?php endwhile; ?>
-            <?php else: ?>
+                <% }); %>
+            <% } else { %>
                 <p>Chưa có bình luận nào cho sản phẩm này.</p>
-            <?php endif; ?>
+            <% } %>
         </div>
-    <?php else: ?>
+    <% } else { %>
         <p>Sản phẩm không tồn tại!</p>
-    <?php endif; ?>
+    <% } %>
 </div>
 
 </body>

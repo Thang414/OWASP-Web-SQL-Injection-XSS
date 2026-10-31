@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Cửa Hàng TMĐT UTH (Secured App - Node.js - Cổng 8081)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
+        header { background: #28a745; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .banner-success { background: #e8f5e9; color: #2e7d32; padding: 10px 30px; font-weight: bold; border-bottom: 1px solid #c8e6c9; }
+        .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
+        .search-box { margin-bottom: 25px; display: flex; gap: 10px; }
+        .search-box input { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
+        .search-box button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .product-card { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .price { color: #28a745; font-size: 18px; font-weight: bold; }
+        a { color: #28a745; text-decoration: none; }
+        .user-info { font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>🛡️ UTH E-Shop (Phiên Bản ĐÃ VÁ LỖ HỔNG - Node.js - Cổng 8081)</h2>
+    <div class="user-info">
+        <% if (user) { %>
+            Xin chào, <strong><%= user.username %> (Quyền: <%= user.role %>)</strong> | 
+            <a href="/logout" style="color: white; text-decoration: underline;">Đăng xuất</a>
+        <% } else { %>
+            <a href="/login" style="color: white; text-decoration: underline;">Đăng nhập</a>
+        <% } %>
+    </div>
+</header>
+
+<div class="banner-success">
+    ✅ HỆ THỐNG AN TOÀN: Đã áp dụng Prepared Statements (chống SQLi), EJS Output Encoding & HttpOnly Cookie + CSP (chống XSS).
+</div>
+
+<div class="container">
+    <form class="search-box" action="/search" method="GET">
+        <input type="text" name="keyword" placeholder="Nhập tên sản phẩm cần tìm...">
+        <button type="submit">Tìm kiếm</button>
+    </form>
+
+    <h3>Danh sách Sản phẩm</h3>
+    <div class="product-grid">
+        <% products.forEach(function(p) { %>
+            <div class="product-card">
+                <h4><a href="/product?id=<%= p.id %>"><%= p.name %></a></h4>
+                <p><%= p.description %></p>
+                <div class="price">
+                    <%= Number(p.price).toLocaleString('vi-VN') + ' VNĐ' %>
+                </div>
+                <p><a href="/product?id=<%= p.id %>">👉 Xem chi tiết & Đánh giá</a></p>
+            </div>
+        <% }); %>
+    </div>
+</div>
+
+</body>
+</html>

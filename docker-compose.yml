@@ -1,5 +1,5 @@
 services:
-  # 1. Cơ sở dữ liệu MySQL
+  # 1. Cơ sở dữ liệu MySQL (MariaDB)
   db:
     image: mariadb:10.5
     container_name: websec_mysql_db
@@ -14,45 +14,47 @@ services:
     networks:
       - websec_net
 
-  # 2. Ứng dụng Web TMĐT Chứa Lỗ Hổng (Vulnerable App)
+  # 2. Ứng dụng Web TMĐT Chứa Lỗ Hổng (Vulnerable App - Node.js)
   web-vulnerable:
-    image: php:8.1-apache
+    image: node:20-alpine
     container_name: websec_app_vulnerable
     restart: always
     ports:
-      - "8080:80"
+      - "8080:8080"
+    working_dir: /app
     volumes:
-      - ./lab-environment/app-vulnerable/src:/var/www/html
+      - ./lab-environment/app-vulnerable:/app
     environment:
+      - PORT=8080
       - DB_HOST=db
       - DB_NAME=ecommerce_db
       - DB_USER=db_user
       - DB_PASS=P@ssword123
     depends_on:
       - db
-    command: >
-      bash -c "docker-php-ext-install mysqli pdo pdo_mysql && apache2-foreground"
+    command: sh -c "npm install && node server.js"
     networks:
       - websec_net
 
-  # 3. Ứng dụng Web TMĐT Đã Vá Lỗ Hổng (Secured App)
+  # 3. Ứng dụng Web TMĐT Đã Vá Lỗ Hổng (Secured App - Node.js)
   web-secured:
-    image: php:8.1-apache
+    image: node:20-alpine
     container_name: websec_app_secured
     restart: always
     ports:
-      - "8081:80"
+      - "8081:8081"
+    working_dir: /app
     volumes:
-      - ./lab-environment/app-secured/src:/var/www/html
+      - ./lab-environment/app-secured:/app
     environment:
+      - PORT=8081
       - DB_HOST=db
       - DB_NAME=ecommerce_db
       - DB_USER=db_user
       - DB_PASS=P@ssword123
     depends_on:
       - db
-    command: >
-      bash -c "docker-php-ext-install mysqli pdo pdo_mysql && apache2-foreground"
+    command: sh -c "npm install && node server.js"
     networks:
       - websec_net
 

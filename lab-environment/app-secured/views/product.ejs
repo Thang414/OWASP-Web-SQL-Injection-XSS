@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title><%= product ? product.name : 'Chi tiết sản phẩm' %> - UTH E-Shop (Secured Node.js)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
+        header { background: #28a745; color: white; padding: 15px 30px; }
+        .container { max-width: 900px; margin: 20px auto; padding: 0 20px; }
+        .product-detail { background: white; padding: 25px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .price { color: #28a745; font-size: 22px; font-weight: bold; margin: 15px 0; }
+        .comment-section { background: white; padding: 25px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .comment-card { border-bottom: 1px solid #eee; padding: 12px 0; }
+        .comment-author { font-weight: bold; color: #2c3e50; }
+        .comment-time { font-size: 12px; color: #7f8c8d; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        a { color: #28a745; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>🛒 UTH E-Shop - Chi Tiết Sản Phẩm & Đánh Giá (Secured Node.js)</h2>
+</header>
+
+<div class="container">
+    <p><a href="/">⬅ Về Danh sách sản phẩm</a></p>
+
+    <% if (product) { %>
+        <div class="product-detail">
+            <h2><%= product.name %></h2>
+            <p><strong>Danh mục:</strong> <%= product.category %></p>
+            <div class="price">
+                <%= Number(product.price).toLocaleString('vi-VN') + ' VNĐ' %>
+            </div>
+            <p><%= product.description %></p>
+        </div>
+
+        <div class="comment-section">
+            <h3>Đánh giá từ khách hàng</h3>
+
+            <!-- Form gửi bình luận đã áp dụng kiểm tra & mã hóa -->
+            <form method="POST" action="/product?id=<%= productId %>">
+                <input type="hidden" name="product_id" value="<%= productId %>">
+                <div class="form-group">
+                    <label>Tên của bạn:</label>
+                    <input type="text" name="author" value="<%= user ? user.username : 'Khách hàng' %>" required>
+                </div>
+                <div class="form-group">
+                    <label>Nội dung bình luận / Đánh giá:</label>
+                    <textarea name="content" rows="3" placeholder="Nhập cảm nhận của bạn về sản phẩm..." required></textarea>
+                </div>
+                <button type="submit">Gửi Bình Luận</button>
+            </form>
+
+            <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
+
+            <h4>Các bình luận đã đăng:</h4>
+            <% if (comments && comments.length > 0) { %>
+                <% comments.forEach(function(c) { %>
+                    <div class="comment-card">
+                        <div class="comment-author">
+                            <%= c.author %> <span class="comment-time">(<%= new Date(c.created_at).toLocaleString('vi-VN') %>)</span>:
+                        </div>
+                        <!-- PHÒNG THỦ STORED XSS:
+                             Bắt buộc sử dụng <%= %> để tự động mã hóa HTML entities.
+                             Thẻ <script> sẽ biến thành &lt;script&gt; và chỉ hiển thị dưới dạng văn bản thuần! -->
+                        <div class="comment-body"><%= c.content %></div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <p>Chưa có bình luận nào cho sản phẩm này.</p>
+            <% } %>
+        </div>
+    <% } else { %>
+        <p>Sản phẩm không tồn tại!</p>
+    <% } %>
+</div>
+
+</body>
+</html>

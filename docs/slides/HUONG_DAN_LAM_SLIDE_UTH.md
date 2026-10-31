@@ -42,9 +42,9 @@ Dành cho **Thành viên 4 (Thiết kế Slide & Thuyết trình)**.
 - **Slide 19:** BƯỚC 2: Khai thác Reflected XSS qua thanh tìm kiếm sản phẩm.
 - **Slide 20:** BƯỚC 2: Khai thác Stored XSS trong bình luận sản phẩm (Ảnh chụp script độc).
 - **Slide 21:** BƯỚC 2: Demo cướp Cookie phiên và chiếm đoạt tài khoản (Session Hijacking).
-- **Slide 22:** BƯỚC 3: Giải pháp phòng thủ SQLi - Triển khai PDO Prepared Statements.
+- **Slide 22:** BƯỚC 3: Giải pháp phòng thủ SQLi - Triển khai Prepared Statements (Node.js mysql2).
 - **Slide 23:** BƯỚC 3: So sánh mã nguồn trước và sau khi vá lỗi SQLi (Diff code trực quan).
-- **Slide 24:** BƯỚC 3: Giải pháp phòng thủ XSS - Output Encoding với htmlspecialchars.
+- **Slide 24:** BƯỚC 3: Giải pháp phòng thủ XSS - Output Encoding (EJS auto-escaping).
 - **Slide 25:** BƯỚC 3: Cấu hình bảo mật nâng cao: Bật cờ HttpOnly cho Cookie và CSP Header.
 - **Slide 26:** BƯỚC 4: Kiểm tra lại (Verification) - Thử lại các payload SQLi trên hệ thống đã vá.
 - **Slide 27:** BƯỚC 4: Kiểm tra lại (Verification) - Thử lại XSS và xác minh Cookie được bảo vệ an toàn.

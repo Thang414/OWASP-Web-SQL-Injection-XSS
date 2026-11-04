@@ -16,15 +16,14 @@ services:
 
   # 2. Ứng dụng Web TMĐT Chứa Lỗ Hổng (Vulnerable App - Java Spring Boot)
   web-vulnerable:
-    image: maven:3.9-eclipse-temurin-17-alpine
+    build:
+      context: ./lab-environment/app-vulnerable
+      dockerfile: Dockerfile
+    image: websec-app-vulnerable:1.0.0
     container_name: websec_app_vulnerable
     restart: always
     ports:
       - "8080:8080"
-    working_dir: /app
-    volumes:
-      - ./lab-environment/app-vulnerable:/app
-      - maven_cache:/root/.m2
     environment:
       - SERVER_PORT=8080
       - DB_HOST=db
@@ -34,21 +33,19 @@ services:
       - DB_PASS=P@ssword123
     depends_on:
       - db
-    command: mvn spring-boot:run
     networks:
       - websec_net
 
   # 3. Ứng dụng Web TMĐT Đã Vá Lỗ Hổng (Secured App - Java Spring Boot)
   web-secured:
-    image: maven:3.9-eclipse-temurin-17-alpine
+    build:
+      context: ./lab-environment/app-secured
+      dockerfile: Dockerfile
+    image: websec-app-secured:1.0.0
     container_name: websec_app_secured
     restart: always
     ports:
       - "8081:8081"
-    working_dir: /app
-    volumes:
-      - ./lab-environment/app-secured:/app
-      - maven_cache:/root/.m2
     environment:
       - SERVER_PORT=8081
       - DB_HOST=db
@@ -58,7 +55,6 @@ services:
       - DB_PASS=P@ssword123
     depends_on:
       - db
-    command: mvn spring-boot:run
     networks:
       - websec_net
 
@@ -75,9 +71,6 @@ services:
     command: python app.py
     networks:
       - websec_net
-
-volumes:
-  maven_cache:
 
 networks:
   websec_net:

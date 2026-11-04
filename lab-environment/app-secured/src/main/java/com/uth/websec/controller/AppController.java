@@ -5,6 +5,8 @@ import com.uth.websec.model.Comment;
 import com.uth.websec.model.Product;
 import com.uth.websec.model.User;
 import jakarta.servlet.http.Cookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +39,14 @@ public class AppController {
         // Đính kèm cookie phiên an toàn: BẬT CỜ HTTPONLY
         if (user != null) {
             String token = Base64.getEncoder().encodeToString((user.getUsername() + "_secured_token_8081").getBytes(StandardCharsets.UTF_8));
-            Cookie cookie = new Cookie("session_token", token);
-            cookie.setHttpOnly(true); // BẢO MẬT: Ngăn chặn JavaScript đọc trộm cookie qua XSS
-            cookie.setPath("/");
-            cookie.setMaxAge(3600);
-            response.addCookie(cookie);
+            ResponseCookie cookie = ResponseCookie.from("session_token", token)
+                    .httpOnly(true) // BẢO MẬT: Ngăn chặn JavaScript đọc trộm cookie qua XSS
+                    .sameSite("Strict") // BẢO MẬT: Chống tấn công CSRF
+                    .secure(false) // Đặt true khi chạy môi trường HTTPS
+                    .path("/")
+                    .maxAge(3600)
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         }
 
         List<Product> products = new ArrayList<>();
@@ -238,11 +243,14 @@ public class AppController {
 
                     // Thiết lập Cookie AN TOÀN: BẬT CỜ HTTPONLY
                     String token = Base64.getEncoder().encodeToString((user.getUsername() + "_secured_token_8081").getBytes(StandardCharsets.UTF_8));
-                    Cookie cookie = new Cookie("session_token", token);
-                    cookie.setHttpOnly(true); // BẢO MẬT: Ngăn chặn XSS đọc Cookie
-                    cookie.setPath("/");
-                    cookie.setMaxAge(3600);
-                    response.addCookie(cookie);
+                    ResponseCookie cookie = ResponseCookie.from("session_token", token)
+                            .httpOnly(true) // BẢO MẬT: Ngăn chặn XSS đọc Cookie
+                            .sameSite("Strict") // BẢO MẬT: Chống tấn công CSRF
+                            .secure(false) // Đặt true khi chạy môi trường HTTPS
+                            .path("/")
+                            .maxAge(3600)
+                            .build();
+                    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
                     return "redirect:/index.php";
                 } else {
@@ -260,10 +268,14 @@ public class AppController {
     @GetMapping({"/logout", "/logout.php"})
     public String logout(HttpSession session, HttpServletResponse response) {
         session.invalidate();
-        Cookie cookie = new Cookie("session_token", "");
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from("session_token", "")
+                .httpOnly(true)
+                .sameSite("Strict")
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return "redirect:/login.php";
     }
 }

@@ -2,29 +2,280 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kết quả Tìm kiếm - UTH E-Shop (Vulnerable Java Spring Boot)</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f6f9; }
-        header { background: #d9534f; color: white; padding: 15px 30px; }
-        .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
-        .product-card { background: white; padding: 15px; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .price { color: #d9534f; font-size: 18px; font-weight: bold; }
-        .debug-sql { background: #2d3748; color: #68d391; padding: 12px; border-radius: 4px; font-family: Consolas, monospace; margin: 15px 0; word-break: break-all; font-size: 13px; }
-        .error-sql { background: #fed7d7; color: #9b2c2c; padding: 10px; border-radius: 4px; margin: 15px 0; font-family: monospace; }
-        a { color: #337ab7; }
-        .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
-        .search-box input { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
-        .search-box button { padding: 10px 20px; background: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        :root {
+            --primary: #dc2626;
+            --primary-hover: #b91c1c;
+            --primary-light: #fee2e2;
+            --bg-base: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            color: #ffffff;
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(220, 38, 38, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+        }
+        .brand-text h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13.5px;
+        }
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 14px;
+            border-radius: 9999px;
+        }
+        .avatar-circle {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-auth {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+        }
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+        .btn-logout:hover { background: rgba(239, 68, 68, 0.25); color: #ffffff; }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+        }
+        .back-nav {
+            margin-bottom: 20px;
+        }
+        .back-nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+        .back-nav a:hover { color: var(--primary); }
+
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 15px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+        }
+        .search-box button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .search-heading {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #0f172a;
+        }
+
+        .debug-sql {
+            background: #1e293b;
+            color: #4ade80;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            margin: 20px 0;
+            word-break: break-all;
+            font-size: 13.5px;
+            border: 1px solid #334155;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            line-height: 1.6;
+        }
+        .error-sql {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            border: 1px solid #fecaca;
+            font-size: 13px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+            border-color: #fca5a5;
+            box-shadow: 0 8px 16px rgba(220, 38, 38, 0.08);
+        }
+        .search-thumb {
+            width: 110px;
+            height: 90px;
+            min-width: 110px;
+            background: #f8fafc;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            overflow: hidden;
+            border: 1px solid #f1f5f9;
+        }
+        .search-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .search-details {
+            flex: 1;
+        }
+        .search-details h4 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #0f172a;
+        }
+        .search-details p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .price {
+            color: var(--primary);
+            font-size: 16.5px;
+            font-weight: 700;
+        }
+        .empty-results {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            color: var(--text-muted);
+            border: 1px dashed var(--border);
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <h2>🛒 UTH E-Shop - Kết Quả Tìm Kiếm (Java Spring Boot)</h2>
+    <a class="header-brand" href="/">
+        <div class="brand-logo">🛒</div>
+        <div class="brand-text">
+            <h2>🛒 UTH E-Shop - Kết Quả Tìm Kiếm (Java Spring Boot)</h2>
+        </div>
+    </a>
+    <div class="user-info">
+        <span th:if="${user != null}" class="user-pill">
+            <span class="avatar-circle" th:text="${#strings.substring(user.username, 0, 1).toUpperCase()}">U</span>
+            <span>Xin chào, <strong th:text="${(user.fullName != null and !user.fullName.isEmpty() ? user.fullName + ' (' + user.username + ')' : user.username) + ' (Quyền: ' + user.role + ')'}"></strong></span>
+        </span>
+        <a th:if="${user != null}" href="/logout" class="btn-auth btn-logout">Đăng xuất</a>
+        <a th:if="${user == null}" href="/login" class="btn-auth btn-login">Đăng nhập</a>
+    </div>
 </header>
 
 <div class="container">
-    <p><a href="/">⬅ Về Trang chủ</a></p>
+    <div class="back-nav">
+        <a href="/">⬅ Về Trang chủ</a>
+    </div>
 
     <form class="search-box" action="/search" method="GET">
         <input type="text" name="keyword" th:value="${keyword}" placeholder="Nhập tên sản phẩm...">
@@ -33,7 +284,7 @@
 
     <!-- LỖ HỔNG REFLECTED XSS:
          Sử dụng th:utext (Unescaped Text) thay vì th:text, khiến chuỗi JavaScript độc hại thực thi trực tiếp trên trình duyệt -->
-    <h3>Kết quả tìm kiếm cho: <span th:utext="${keyword}"></span></h3>
+    <h3 class="search-heading">Kết quả tìm kiếm cho: <span th:utext="${keyword}"></span></h3>
 
     <div class="debug-sql">
         <strong style="color: #ecc94b;">🔍 Câu lệnh SQL thực thi trong Java Backend:</strong><br>
@@ -46,12 +297,18 @@
 
     <div th:if="${products != null and not #lists.isEmpty(products)}">
         <div class="product-card" th:each="p : ${products}">
-            <h4 th:text="${p.name}"></h4>
-            <p th:text="${p.description}"></p>
-            <div class="price" th:text="${p.formattedPrice}"></div>
+            <div class="search-thumb">
+                <img th:src="${p.imageUrl}" th:alt="${p.name}" loading="lazy">
+            </div>
+            <div class="search-details">
+                <h4 th:text="${p.name}"></h4>
+                <p th:text="${p.description}"></p>
+                <div class="price" th:text="${p.formattedPrice}"></div>
+            </div>
+            <a th:href="@{'/product?id=' + ${p.id}}" style="padding: 8px 14px; background: #fee2e2; color: #dc2626; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none;">Xem chi tiết</a>
         </div>
     </div>
-    <div th:if="${products != null and #lists.isEmpty(products) and !keyword.isEmpty()}">
+    <div class="empty-results" th:if="${products != null and #lists.isEmpty(products) and !keyword.isEmpty()}">
         <p>Không tìm thấy sản phẩm nào phù hợp!</p>
     </div>
 </div>

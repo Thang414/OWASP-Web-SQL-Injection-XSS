@@ -2,45 +2,319 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - UTH E-Shop (Secured Java Spring Boot)</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 400px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
-        .error { color: red; margin-bottom: 15px; }
-        .verify-box { background: #e8f5e9; border: 1px solid #c8e6c9; color: #2e7d32; padding: 10px; margin-top: 15px; font-size: 13px; border-radius: 4px; line-height: 1.5; }
+        :root {
+            --primary: #059669;
+            --primary-hover: #047857;
+            --bg-base: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #064e3b 0%, #0f172a 50%, #064e3b 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 30px 16px;
+            color: var(--text-main);
+        }
+        .login-card {
+            background: white;
+            padding: 36px 32px;
+            border-radius: 18px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+            width: 100%;
+            max-width: 520px;
+        }
+        .card-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 14px;
+            font-size: 26px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+        .card-header h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+        }
+        .card-header p {
+            color: var(--text-muted);
+            font-size: 13.5px;
+            margin-top: 4px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+            font-size: 13.5px;
+            color: #334155;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14.5px;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+        }
+        button.btn-submit {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+        button.btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+        }
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 13.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logout-msg {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 13.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .session-active {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .session-active a {
+            color: #059669;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+        .seed-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 14px;
+            margin-top: 22px;
+            font-size: 12px;
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+        .seed-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        .seed-table th, .seed-table td {
+            border: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        .seed-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #475569;
+        }
+        .seed-table code {
+            background: #e2e8f0;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #0f172a;
+        }
+        .btn-fill {
+            background: #d1fae5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-fill:hover {
+            background: #10b981;
+            color: white;
+        }
+        .verify-box {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 12px;
+            margin-top: 14px;
+            font-size: 12.5px;
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+        .verify-box code {
+            background: #d1fae5;
+            padding: 1px 4px;
+            border-radius: 4px;
+            color: #047857;
+            font-weight: 600;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13.5px;
+        }
+        .back-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link a:hover {
+            color: var(--primary);
+        }
     </style>
 </head>
 <body>
 
 <div class="login-card">
-    <h2 style="text-align: center; color: #28a745;">Đăng Nhập Bảo Mật</h2>
-    
-    <div class="error" th:if="${message != null}" th:text="${message}"></div>
+    <div class="card-header">
+        <div class="brand-badge">🛡️</div>
+        <h2>Đăng nhập bảo mật</h2>
+        <p>Hệ thống TMĐT Lab Nghiên cứu An ninh mạng UTH</p>
+    </div>
+
+    <div class="logout-msg" th:if="${logoutMessage != null}">
+        <span>✅</span> <span th:text="${logoutMessage}"></span>
+    </div>
+    <div class="error" th:if="${message != null}">
+        <span>⚠️</span> <span th:text="${message}"></span>
+    </div>
+
+    <div class="session-active" th:if="${user != null}">
+        Phiên hiện tại: <strong th:text="${(user.fullName != null and !user.fullName.isEmpty() ? user.fullName + ' (' + user.username + ')' : user.username) + ' (Quyền: ' + user.role + ')'}"></strong><br>
+        <a href="/">Về trang chủ</a> | <a href="/logout">Đăng xuất</a>
+    </div>
 
     <form method="POST" action="/login">
         <div class="form-group">
-            <label>Tên đăng nhập:</label>
-            <input type="text" name="username" placeholder="Nhập username..." required>
+            <label for="username">Tên đăng nhập:</label>
+            <input id="username" type="text" name="username" placeholder="Nhập username giả lập (VD: nguyenvana)..." required>
         </div>
         <div class="form-group">
-            <label>Mật khẩu:</label>
-            <input type="password" name="password" placeholder="Nhập mật khẩu..." required>
+            <label for="password">Mật khẩu:</label>
+            <input id="password" type="password" name="password" placeholder="Nhập mật khẩu..." required>
         </div>
-        <button type="submit">Đăng Nhập</button>
+        <button class="btn-submit" type="submit">Đăng nhập</button>
     </form>
 
-    <div class="verify-box">
-        🛡️ <strong>Kiểm thử lại phòng thủ (Bước 4):</strong><br>
-        Nhập payload: <code>admin' -- </code><br>
-        👉 Kết quả: Đăng nhập thất bại hoàn toàn vì <code>PreparedStatement</code> trong Java coi toàn bộ chuỗi trên như một username bình thường, không thể phá vỡ logic SQL.
+    <div class="seed-box">
+        <strong style="color: #0f172a;">Tài khoản giả lập trong lab (init.sql - không dùng tài khoản thật):</strong>
+        <table class="seed-table">
+            <thead>
+                <tr>
+                    <th>Tài khoản</th>
+                    <th>Mật khẩu</th>
+                    <th>Họ tên</th>
+                    <th>Quyền</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>nguyenvana</code></td>
+                    <td><code>pass123456</code></td>
+                    <td>Nguyễn Văn A</td>
+                    <td><code>customer</code></td>
+                    <td><button type="button" class="btn-fill" onclick="quickFill('nguyenvana', 'pass123456')">Điền</button></td>
+                </tr>
+                <tr>
+                    <td><code>tranthib</code></td>
+                    <td><code>passwordB123</code></td>
+                    <td>Trần Thị B</td>
+                    <td><code>customer</code></td>
+                    <td><button type="button" class="btn-fill" onclick="quickFill('tranthib', 'passwordB123')">Điền</button></td>
+                </tr>
+                <tr>
+                    <td><code>manager</code></td>
+                    <td><code>manager@2026</code></td>
+                    <td>Trưởng Phòng Kinh Doanh</td>
+                    <td><code>manager</code></td>
+                    <td><button type="button" class="btn-fill" onclick="quickFill('manager', 'manager@2026')">Điền</button></td>
+                </tr>
+                <tr>
+                    <td><code>admin</code></td>
+                    <td><code>admin123_super_secret</code></td>
+                    <td>Quản Trị Viên Hệ Thống</td>
+                    <td><code>admin</code></td>
+                    <td><button type="button" class="btn-fill" onclick="quickFill('admin', 'admin123_super_secret')">Điền</button></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
-    <p style="text-align: center; margin-top: 15px;"><a href="/" style="color: #28a745;">⬅ Quay lại Trang chủ</a></p>
+    <div class="verify-box">
+        🛡️ <strong>Cơ chế bảo vệ chống Authentication Bypass:</strong><br>
+        1. Sử dụng <code>PreparedStatement</code>: Chuỗi độc hại như <code>admin' -- </code> chỉ được coi là giá trị chuỗi thuần túy.<br>
+        2. Xác thực mật khẩu bắt buộc: Không thể bỏ qua kiểm tra mật khẩu.
+    </div>
+
+    <div class="back-link">
+        <a href="/">⬅ Quay lại trang chủ</a>
+    </div>
 </div>
+
+<script>
+    function quickFill(user, pass) {
+        document.getElementById('username').value = user;
+        document.getElementById('password').value = pass;
+    }
+</script>
 
 </body>
 </html>

@@ -2,8 +2,14 @@
 CREATE DATABASE IF NOT EXISTS ecommerce_db;
 USE ecommerce_db;
 
--- 1. Bảng người dùng (Chứa tài khoản admin & khách hàng)
+-- Đảm bảo xóa bảng theo đúng thứ tự ràng buộc khóa ngoại để phục vụ quy trình reset dữ liệu
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS users;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- 1. Bảng người dùng (Chứa tài khoản admin & khách hàng)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -21,7 +27,6 @@ INSERT INTO users (username, password, full_name, role, credit_card) VALUES
 ('tranthib', 'passwordB123', 'Trần Thị B', 'customer', '9704-4444-5555-6666');
 
 -- 2. Bảng sản phẩm TMĐT
-DROP TABLE IF EXISTS products;
 CREATE TABLE products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -38,7 +43,6 @@ INSERT INTO products (name, description, price, category) VALUES
 ('Tai nghe Sony WH-1000XM5', 'Tai nghe chống ồn chủ động cao cấp', 7990000.00, 'Phụ kiện');
 
 -- 3. Bảng bình luận/đánh giá sản phẩm (Dùng để demo Stored XSS)
-DROP TABLE IF EXISTS comments;
 CREATE TABLE comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,

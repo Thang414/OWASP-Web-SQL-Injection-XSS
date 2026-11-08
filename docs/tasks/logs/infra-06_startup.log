@@ -1,0 +1,49 @@
+﻿================================================================================
+NHẬT KÝ KHỞI ĐỘNG HỆ THỐNG VÀ CẤU HÌNH MÁY LAB (INFRA-06)
+Thời gian ghi nhận: 2026-11-09 00:44:23 +07:00
+Phụ trách: TV3 - Ngọc Thắng (Trưởng nhóm: Ngọc Thắng)
+Mã nhiệm vụ Jira: INFRA-06
+================================================================================
+
+1. THÔNG SỐ CẤU HÌNH MÁY TRẠM THỰC NGHIỆM (HOST SPECS)
+- Hệ điều hành: Microsoft Windows 11 Home (10.0.26200)
+- Bộ xử lý (CPU): AMD Ryzen 9 7945HX with Radeon Graphics         (16 Cores, 32 Threads)
+- Dung lượng RAM: 15.69 GB
+- Docker Desktop: v4.69.0
+- Docker Engine: Client: 29.4.0 | Server: 29.4.0
+- Docker Compose: Docker Compose version v5.1.1
+- Môi trường phát triển Host: Java 26.0.1, Apache Maven 3.9.16, Python 3.11.0
+
+2. DANH SÁCH CONTAINER VÀ CỔNG TRUY CẬP DỊCH VỤ
+NAMES                   IMAGE                             STATUS         PORTS websec_app_secured      websec-app-secured:1.0.0          Up 3 minutes   0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp websec_app_vulnerable   websec-app-vulnerable:1.0.0       Up 3 minutes   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp websec_cookie_stealer   python:3.9-slim                   Up 3 minutes   0.0.0.0:8888->8888/tcp, [::]:8888->8888/tcp websec_mysql_db         mariadb:10.5                      Up 3 minutes   3306/tcp library_frontend        library-management-php-frontend   Up 6 minutes   0.0.0.0:5173->5173/tcp, [::]:5173->5173/tcp library_backend         library-management-php-backend    Up 6 minutes   0.0.0.0:3000->80/tcp, [::]:3000->80/tcp library_mysql           mysql:8.0                         Up 6 minutes   0.0.0.0:3307->3306/tcp, [::]:3307->3306/tcp
+
+- Cổng 8080: Web TMĐT dính lỗ hổng (websec_app_vulnerable - Java Spring Boot / Tomcat)
+- Cổng 8081: Web TMĐT đã vá bảo mật (websec_app_secured - Java Spring Boot / Tomcat)
+- Cổng 8888: Attacker Cookie Stealer Listener (websec_cookie_stealer - Python 3.9)
+- Cổng 3306 (Nội bộ): MariaDB Database (websec_mysql_db - MariaDB 10.5.29)
+
+================================================================================
+3. LOG KHỞI ĐỘNG CONTAINER CSDL (websec_mysql_db)
+================================================================================
+ 2026-11-08 17:40:30+00:00 [Note] [Entrypoint]: /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/init.sql   2026-11-08 17:40:30+00:00 [Note] [Entrypoint]: Stopping temporary server 2026-11-08 17:40:30+00:00 [Note] [Entrypoint]: Temporary server stopped  2026-11-08 17:40:30+00:00 [Note] [Entrypoint]: MariaDB init process done. Ready for start up. 
+
+================================================================================
+4. LOG KHỞI ĐỘNG ỨNG DỤNG VULNERABLE (websec_app_vulnerable - CỔNG 8080)
+================================================================================
+   .   ____          _            __ _ _  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \ ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )   '  |____| .__|_| |_|_| |_\__, | / / / /  =========|_|==============|___/=/_/_/_/  :: Spring Boot ::                (v3.2.5)  2026-11-08T17:40:26.798Z  INFO 1 --- [websec-app-vulnerable] [           main] com.uth.websec.VulnerableApp             : Starting VulnerableApp v1.0.0 using Java 17.0.21 with PID 1 (/app/app.jar started by appuser in /app) 2026-11-08T17:40:26.815Z  INFO 1 --- [websec-app-vulnerable] [           main] com.uth.websec.VulnerableApp             : No active profile set, falling back to 1 default profile: "default" 2026-11-08T17:40:28.096Z  INFO 1 --- [websec-app-vulnerable] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http) 2026-11-08T17:40:28.106Z  INFO 1 --- [websec-app-vulnerable] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat] 2026-11-08T17:40:28.106Z  INFO 1 --- [websec-app-vulnerable] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20] 2026-11-08T17:40:28.139Z  INFO 1 --- [websec-app-vulnerable] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext 2026-11-08T17:40:28.140Z  INFO 1 --- [websec-app-vulnerable] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1201 ms 2026-11-08T17:40:28.250Z  INFO 1 --- [websec-app-vulnerable] [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page template: index 2026-11-08T17:40:28.498Z  INFO 1 --- [websec-app-vulnerable] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '' 2026-11-08T17:40:28.514Z  INFO 1 --- [websec-app-vulnerable] [           main] com.uth.websec.VulnerableApp             : Started VulnerableApp in 2.164 seconds (process running for 2.616) 🚀 [VULNERABLE JAVA APP] Đang chạy tại cổng http://localhost:8080 2026-11-08T17:41:00.979Z  INFO 1 --- [websec-app-vulnerable] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet' 2026-11-08T17:41:00.980Z  INFO 1 --- [websec-app-vulnerable] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet' 2026-11-08T17:41:00.981Z  INFO 1 --- [websec-app-vulnerable] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms [DEBUG SQL VULNERABLE LOGIN]: SELECT * FROM users WHERE username = 'nguyenvana' AND password = 'pass123456'
+
+================================================================================
+5. LOG KHỞI ĐỘNG ỨNG DỤNG SECURED (websec_app_secured - CỔNG 8081)
+================================================================================
+   .   ____          _            __ _ _  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \ ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )   '  |____| .__|_| |_|_| |_\__, | / / / /  =========|_|==============|___/=/_/_/_/  :: Spring Boot ::                (v3.2.5)  2026-11-08T17:40:26.751Z  INFO 1 --- [websec-app-secured] [           main] com.uth.websec.SecuredApp                : Starting SecuredApp v1.0.0 using Java 17.0.21 with PID 1 (/app/app.jar started by appuser in /app) 2026-11-08T17:40:26.764Z  INFO 1 --- [websec-app-secured] [           main] com.uth.websec.SecuredApp                : No active profile set, falling back to 1 default profile: "default" 2026-11-08T17:40:28.058Z  INFO 1 --- [websec-app-secured] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8081 (http) 2026-11-08T17:40:28.066Z  INFO 1 --- [websec-app-secured] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat] 2026-11-08T17:40:28.066Z  INFO 1 --- [websec-app-secured] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.20] 2026-11-08T17:40:28.096Z  INFO 1 --- [websec-app-secured] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext 2026-11-08T17:40:28.097Z  INFO 1 --- [websec-app-secured] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1224 ms 2026-11-08T17:40:28.219Z  INFO 1 --- [websec-app-secured] [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page template: index 2026-11-08T17:40:28.465Z  INFO 1 --- [websec-app-secured] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8081 (http) with context path '' 2026-11-08T17:40:28.484Z  INFO 1 --- [websec-app-secured] [           main] com.uth.websec.SecuredApp                : Started SecuredApp in 2.197 seconds (process running for 2.626) 🛡️ [SECURED JAVA APP] Đang chạy tại cổng http://localhost:8081 2026-11-08T17:41:01.295Z  INFO 1 --- [websec-app-secured] [nio-8081-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet' 2026-11-08T17:41:01.295Z  INFO 1 --- [websec-app-secured] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet' 2026-11-08T17:41:01.297Z  INFO 1 --- [websec-app-secured] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+
+================================================================================
+6. LOG KHỞI ĐỘNG MÁY CHỦ HỨNG COOKIE (websec_cookie_stealer - CỔNG 8888)
+================================================================================
+
+
+================================================================================
+KẾT LUẬN KHỞI ĐỘNG:
+- Toàn bộ 4 dịch vụ đã khởi động hoàn tất trong trạng thái lành mạnh (Healthy/Up).
+- Sẵn sàng tiến hành thực thi Checklist tích hợp chức năng và kịch bản khai thác.
+================================================================================

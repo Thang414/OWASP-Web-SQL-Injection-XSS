@@ -52,9 +52,9 @@ def take_screenshot(url, filename):
 def query_db(sql):
     cmd = [
         "docker", "exec", "websec_mysql_db",
-        "mysql", "-u", "db_user", "-pP@ssword123", "ecommerce_db", "-sN", "-e", sql
+        "mysql", "-u", "db_user", "-pP@ssword123", "--default-character-set=utf8mb4", "ecommerce_db", "-sN", "-e", sql
     ]
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if res.returncode != 0:
         raise RuntimeError(f"Lỗi truy vấn CSDL: {res.stderr.strip()}")
     return res.stdout.strip()
@@ -333,7 +333,9 @@ def run_tests():
         reset_res = subprocess.run(
             ["powershell", "-ExecutionPolicy", "Bypass", "-File", reset_script],
             capture_output=True,
-            text=True
+            text=True,
+            encoding="utf-8",
+            errors="replace"
         )
         
         comments_after = int(query_db("SELECT count(*) FROM comments;"))

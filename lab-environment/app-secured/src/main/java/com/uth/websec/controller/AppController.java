@@ -8,12 +8,15 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -29,6 +32,7 @@ import java.util.List;
 @Controller
 public class AppController {
 
+    private static final Logger log = LoggerFactory.getLogger(AppController.class);
     private static final String SECURED_TOKEN_SUFFIX = "_secured_token_8081";
 
     @Autowired
@@ -139,7 +143,9 @@ public class AppController {
                         rs.getString("category")
                 ));
             }
+            log.info("[CORE-04][HOME] Hien thi trang chu (secured) - Tong so san pham: {}", products.size());
         } catch (Exception e) {
+            log.error("[CORE-04][HOME][ERROR] Loi truy van danh sach san pham: {}", e.getMessage());
             model.addAttribute("error", "Lỗi CSDL: " + e.getMessage());
         }
 
@@ -153,14 +159,38 @@ public class AppController {
                          HttpSession session,
                          HttpServletRequest request,
                          Model model) {
-        String cleanKeyword = keyword.trim();
+        String cleanKeyword = (keyword == null) ? "" : keyword.trim();
+        boolean isBlankKeyword = cleanKeyword.isEmpty();
+
         User user = resolveSessionUser(session, request);
         model.addAttribute("user", user);
         model.addAttribute("keyword", cleanKeyword);
+        model.addAttribute("isBlankSearch", isBlankKeyword);
 
         List<Product> products = new ArrayList<>();
 
-        if (!cleanKeyword.isEmpty()) {
+        if (isBlankKeyword) {
+            // Trường hợp 3: Từ khóa rỗng hoặc chỉ chứa khoảng trắng -> Trả về toàn bộ danh sách sản phẩm mặc định
+            String sql = "SELECT id, name, description, price FROM products";
+            try (Connection conn = dbConfig.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql);
+                 ResultSet rs = pstmt.executeQuery()) {
+
+                while (rs.next()) {
+                    products.add(new Product(
+                            rs.getString("id"),
+                            rs.getString("name"),
+                            rs.getString("description"),
+                            rs.getString("price"),
+                            ""
+                    ));
+                }
+                log.info("[CORE-04][SEARCH][BLANK_KEYWORD] Tu khoa rong hoac chi chua khoang trang (raw='{}') -> Tra ve toan bo {} san pham mac dinh",
+                        keyword, products.size());
+            } catch (Exception e) {
+                log.warn("[CORE-04][SEARCH][SQL_ERROR] Loi truy van danh sach mac dinh: {}", e.getMessage());
+            }
+        } else {
             // PHÒNG THỦ SQL INJECTION: PreparedStatement phân tách mã SQL và dữ liệu
             String sql = "SELECT id, name, description, price FROM products WHERE name LIKE ?";
             try (Connection conn = dbConfig.getConnection();
@@ -179,13 +209,27 @@ public class AppController {
                         ));
                     }
                 }
+                if (products.isEmpty()) {
+                    log.info("[CORE-04][SEARCH][NOT_FOUND] Tu khoa='{}' -> Khong tim thay san pham nao (0 ket qua)", cleanKeyword);
+                } else {
+                    log.info("[CORE-04][SEARCH][FOUND] Tu khoa='{}' -> Tim thay {} san pham", cleanKeyword, products.size());
+                }
             } catch (Exception e) {
-                System.err.println("Lỗi tìm kiếm: " + e.getMessage());
+                log.warn("[CORE-04][SEARCH][SQL_ERROR] Tu khoa='{}' -> Loi tim kiem: {}", cleanKeyword, e.getMessage());
             }
         }
 
         model.addAttribute("products", products);
         return "search";
+    }
+
+    // Hỗ trợ điều hướng đường dẫn dạng /products/{id} tương thích với /product?id=...
+    @GetMapping("/products/{id}")
+    public String productDetailByPath(@PathVariable("id") String id,
+                                      HttpSession session,
+                                      HttpServletRequest request,
+                                      Model model) {
+        return productDetail(id, session, request, model);
     }
 
     // 3. Chi tiết sản phẩm & Bình luận (Secured)

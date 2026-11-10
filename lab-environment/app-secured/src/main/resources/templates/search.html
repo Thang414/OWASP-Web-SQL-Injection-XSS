@@ -287,6 +287,10 @@
         2. Thymeleaf Output Encoding: Thẻ <code>&lt;script&gt;</code> được mã hóa thành <code>&amp;lt;script&amp;gt;</code>, vô hiệu hóa hoàn toàn mã độc XSS!
     </div>
 
+    <div class="blank-search-notice" th:if="${isBlankSearch}" style="background: #fffbeb; color: #92400e; padding: 12px 18px; border-radius: 10px; border: 1px solid #fde68a; margin-bottom: 16px; font-size: 14px;">
+        ℹ️ Từ khóa tìm kiếm đang trống hoặc chỉ chứa khoảng trắng — Hiển thị toàn bộ danh sách sản phẩm mặc định (<strong th:text="${products != null ? #lists.size(products) : 0}">0</strong> sản phẩm).
+    </div>
+
     <div th:if="${products != null and not #lists.isEmpty(products)}">
         <div class="product-card" th:each="p : ${products}">
             <div class="search-thumb">
@@ -300,8 +304,8 @@
             <a th:href="@{'/product?id=' + ${p.id}}" style="padding: 8px 14px; background: #d1fae5; color: #047857; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none;">Xem chi tiết</a>
         </div>
     </div>
-    <div class="empty-results" th:if="${products != null and #lists.isEmpty(products) and !keyword.isEmpty()}">
-        <p>Không tìm thấy sản phẩm nào phù hợp!</p>
+    <div class="empty-results" th:if="${products != null and #lists.isEmpty(products) and (isBlankSearch == null or !isBlankSearch)}">
+        <p>Không tìm thấy sản phẩm nào phù hợp với từ khóa "<strong th:text="${keyword}"></strong>"!</p>
     </div>
 </div>
 

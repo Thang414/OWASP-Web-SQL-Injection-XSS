@@ -241,49 +241,64 @@ public class AppController {
         User user = resolveSessionUser(session, request);
         model.addAttribute("user", user);
 
-        int id = 1;
+        int id = -1;
         try {
-            id = Integer.parseInt(idStr);
-        } catch (NumberFormatException ignored) {}
+            if (idStr != null) {
+                id = Integer.parseInt(idStr.trim());
+            }
+        } catch (NumberFormatException ignored) {
+            id = -1;
+        }
 
-        model.addAttribute("productId", id);
+        model.addAttribute("productId", id > 0 ? id : idStr);
         Product product = null;
         List<Comment> comments = new ArrayList<>();
 
-        try (Connection conn = dbConfig.getConnection()) {
-            // Lấy thông tin sản phẩm (Prepared Statement)
-            try (PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM products WHERE id = ?")) {
-                pstmt.setInt(1, id);
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        product = new Product(
-                                rs.getString("id"),
-                                rs.getString("name"),
-                                rs.getString("description"),
-                                rs.getString("price"),
-                                rs.getString("category")
-                        );
+        if (id > 0) {
+            try (Connection conn = dbConfig.getConnection()) {
+                // Lấy thông tin sản phẩm (Prepared Statement)
+                try (PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM products WHERE id = ?")) {
+                    pstmt.setInt(1, id);
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        if (rs.next()) {
+                            product = new Product(
+                                    rs.getString("id"),
+                                    rs.getString("name"),
+                                    rs.getString("description"),
+                                    rs.getString("price"),
+                                    rs.getString("category")
+                            );
+                        }
                     }
                 }
-            }
 
-            // Lấy danh sách bình luận (Prepared Statement)
-            try (PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM comments WHERE product_id = ? ORDER BY id DESC")) {
-                pstmt.setInt(1, id);
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    while (rs.next()) {
-                        comments.add(new Comment(
-                                rs.getInt("id"),
-                                rs.getInt("product_id"),
-                                rs.getString("author"),
-                                rs.getString("content"),
-                                rs.getString("created_at")
-                        ));
+                // Lấy danh sách bình luận (Prepared Statement)
+                if (product != null) {
+                    try (PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM comments WHERE product_id = ? ORDER BY id DESC")) {
+                        pstmt.setInt(1, id);
+                        try (ResultSet rs = pstmt.executeQuery()) {
+                            while (rs.next()) {
+                                comments.add(new Comment(
+                                        rs.getInt("id"),
+                                        rs.getInt("product_id"),
+                                        rs.getString("author"),
+                                        rs.getString("content"),
+                                        rs.getString("created_at")
+                                ));
+                            }
+                        }
                     }
+                    log.info("[CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='{}' (name='{}') - So binh luan hien co: {}",
+                            id, product.getName(), comments.size());
+                } else {
+                    log.warn("[CORE-06][READ][NOT_FOUND] San pham khong ton tai (secured): id='{}'", idStr);
                 }
+            } catch (Exception e) {
+                log.warn("[CORE-06][READ][SQL_ERROR] Loi truy van chi tiet san pham id='{}': {}", idStr, e.getMessage());
+                model.addAttribute("error", "Lỗi CSDL: " + e.getMessage());
             }
-        } catch (Exception e) {
-            model.addAttribute("error", "Lỗi CSDL: " + e.getMessage());
+        } else {
+            log.warn("[CORE-06][READ][NOT_FOUND] San pham khong ton tai hoac ID khong hop le (secured): id='{}'", idStr);
         }
 
         model.addAttribute("product", product);
@@ -293,33 +308,81 @@ public class AppController {
 
     // Gửi bình luận (PHÒNG THỦ: PREPARED STATEMENT + VALIDATION)
     @PostMapping({"/product", "/product.php"})
-    public String addComment(@RequestParam("product_id") String productIdStr,
-                             @RequestParam(name = "author", defaultValue = "Khách hàng") String author,
-                             @RequestParam("content") String content) {
-        int productId = 1;
-        try {
-            productId = Integer.parseInt(productIdStr);
-        } catch (NumberFormatException ignored) {}
+    public String addComment(@RequestParam(name = "product_id", defaultValue = "") String productIdStr,
+                             @RequestParam(name = "author", defaultValue = "") String author,
+                             @RequestParam(name = "content", defaultValue = "") String content,
+                             HttpSession session,
+                             HttpServletRequest request,
+                             RedirectAttributes redirectAttributes) {
+        User sessionUser = resolveSessionUser(session, request);
+        String cleanAuthor = (author == null || author.trim().isEmpty())
+                ? ((sessionUser != null && sessionUser.getUsername() != null && !sessionUser.getUsername().isBlank())
+                    ? sessionUser.getUsername() : "Khách hàng")
+                : author.trim();
 
-        String cleanAuthor = author.trim();
-        if (cleanAuthor.length() > 50) {
-            cleanAuthor = cleanAuthor.substring(0, 50);
+        log.info("[CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='{}', author='{}'",
+                productIdStr, cleanAuthor);
+
+        if (productIdStr == null || productIdStr.trim().isEmpty()) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan - Ma san pham rong");
+            redirectAttributes.addFlashAttribute("commentError", "Mã sản phẩm không hợp lệ!");
+            return "redirect:/";
         }
-        String cleanContent = content.trim();
 
-        if (!cleanContent.isEmpty()) {
-            // PHÒNG THỦ SQL INJECTION: PreparedStatement
-            String sql = "INSERT INTO comments (product_id, author, content) VALUES (?, ?, ?)";
-            try (Connection conn = dbConfig.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-                pstmt.setInt(1, productId);
-                pstmt.setString(2, cleanAuthor);
-                pstmt.setString(3, cleanContent);
-                pstmt.executeUpdate();
-            } catch (Exception e) {
-                System.err.println("Lỗi lưu bình luận: " + e.getMessage());
+        int productId;
+        try {
+            productId = Integer.parseInt(productIdStr.trim());
+            if (productId <= 0) {
+                throw new NumberFormatException("ID must be positive");
             }
+        } catch (NumberFormatException e) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan - Ma san pham khong hop le: '{}'", productIdStr);
+            redirectAttributes.addFlashAttribute("commentError", "Mã sản phẩm không hợp lệ!");
+            return "redirect:/product?id=" + productIdStr;
+        }
+
+        String cleanContent = (content == null) ? "" : content.trim();
+        if (cleanContent.isEmpty()) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Noi dung rong hoac chi chua khoang trang",
+                    productId);
+            redirectAttributes.addFlashAttribute("commentError", "Nội dung bình luận không được để trống hoặc chỉ chứa khoảng trắng!");
+            return "redirect:/product?id=" + productId;
+        }
+
+        if (cleanAuthor.length() > 50) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Ten tac gia vuot qua 50 ky tu (len={})",
+                    productId, cleanAuthor.length());
+            redirectAttributes.addFlashAttribute("commentError", "Tên người bình luận không được vượt quá 50 ký tự!");
+            return "redirect:/product?id=" + productId;
+        }
+
+        if (cleanContent.length() > 1000) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Noi dung vuot qua 1000 ky tu (len={})",
+                    productId, cleanContent.length());
+            redirectAttributes.addFlashAttribute("commentError", "Nội dung bình luận không được vượt quá 1000 ký tự!");
+            return "redirect:/product?id=" + productId;
+        }
+
+        // PHÒNG THỦ SQL INJECTION: PreparedStatement
+        String sql = "INSERT INTO comments (product_id, author, content) VALUES (?, ?, ?)";
+        try (Connection conn = dbConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, productId);
+            pstmt.setString(2, cleanAuthor);
+            pstmt.setString(3, cleanContent);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                log.info("[CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (secured): product_id='{}', author='{}', rowsAffected={}",
+                        productId, cleanAuthor, rowsAffected);
+                redirectAttributes.addFlashAttribute("commentSuccess", "Gửi bình luận đánh giá thành công!");
+            } else {
+                log.warn("[CORE-06][WRITE][DB_ERROR] Khong co ban ghi nao duoc luu cho product_id='{}' (rowsAffected=0)", productId);
+                redirectAttributes.addFlashAttribute("commentError", "Không thể lưu bình luận vào cơ sở dữ liệu!");
+            }
+        } catch (Exception e) {
+            log.error("[CORE-06][WRITE][DB_ERROR] Luu binh luan that bai cho product_id='{}' - Loi DB: {}", productId, e.getMessage());
+            redirectAttributes.addFlashAttribute("commentError", "Không thể lưu bình luận: Sản phẩm không tồn tại hoặc dữ liệu không hợp lệ!");
         }
 
         return "redirect:/product?id=" + productId;

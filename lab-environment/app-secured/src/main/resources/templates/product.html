@@ -301,6 +301,67 @@
             color: #334155;
             line-height: 1.5;
         }
+        .alert-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 18px;
+        }
+        .alert-success {
+            background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .product-not-found {
+            background: white;
+            border-radius: 16px;
+            border: 1px dashed #cbd5e1;
+            padding: 48px 28px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+        .not-found-icon {
+            font-size: 48px;
+            margin-bottom: 14px;
+        }
+        .product-not-found h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+        .product-not-found p {
+            color: var(--text-muted);
+            font-size: 14.5px;
+            max-width: 500px;
+            margin: 0 auto 22px;
+        }
+        .btn-back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 22px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-back-home:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -352,6 +413,15 @@
         <div class="comment-section">
             <h3>💬 Đánh giá từ khách hàng</h3>
 
+            <div th:if="${commentSuccess != null}" class="alert-box alert-success">
+                <span>✅</span>
+                <span th:text="${commentSuccess}"></span>
+            </div>
+            <div th:if="${commentError != null}" class="alert-box alert-error">
+                <span>⚠️</span>
+                <span th:text="${commentError}"></span>
+            </div>
+
             <form method="POST" th:action="@{'/product?id=' + ${productId}}">
                 <input type="hidden" name="product_id" th:value="${productId}">
                 <div class="form-group">
@@ -380,6 +450,17 @@
                 <p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px;">Chưa có bình luận nào cho sản phẩm này.</p>
             </div>
         </div>
+    </div>
+
+    <div th:if="${product == null}" class="product-not-found">
+        <div class="not-found-icon">🔍</div>
+        <h3>Sản phẩm không tồn tại hoặc đã bị xóa!</h3>
+        <p>Không tìm thấy thông tin cho sản phẩm với mã ID <strong th:text="${productId}"></strong>. Vui lòng kiểm tra lại đường dẫn hoặc chọn sản phẩm khác.</p>
+        <div th:if="${commentError != null}" class="alert-box alert-error" style="max-width: 520px; margin: 0 auto 20px; text-align: left;">
+            <span>⚠️</span>
+            <span th:text="${commentError}"></span>
+        </div>
+        <a href="/" class="btn-back-home">⬅ Quay lại Trang chủ &amp; Danh sách sản phẩm</a>
     </div>
 </div>
 

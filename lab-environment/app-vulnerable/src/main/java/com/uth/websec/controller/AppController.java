@@ -250,7 +250,7 @@ public class AppController {
         try (Connection conn = dbConfig.getConnection();
              Statement stmt = conn.createStatement()) {
 
-            // Lấy thông tin sản phẩm (Nối chuỗi id)
+            // Lấy thông tin sản phẩm (Nối chuỗi id phục vụ Lab SQLi)
             try (ResultSet rs = stmt.executeQuery("SELECT * FROM products WHERE id = " + id)) {
                 if (rs.next()) {
                     product = new Product(
@@ -264,18 +264,25 @@ public class AppController {
             }
 
             // Lấy danh sách bình luận (Nối chuỗi id)
-            try (ResultSet rs = stmt.executeQuery("SELECT * FROM comments WHERE product_id = " + id + " ORDER BY id DESC")) {
-                while (rs.next()) {
-                    comments.add(new Comment(
-                            rs.getInt("id"),
-                            rs.getInt("product_id"),
-                            rs.getString("author"),
-                            rs.getString("content"),
-                            rs.getString("created_at")
-                    ));
+            if (product != null) {
+                try (ResultSet rs = stmt.executeQuery("SELECT * FROM comments WHERE product_id = " + id + " ORDER BY id DESC")) {
+                    while (rs.next()) {
+                        comments.add(new Comment(
+                                rs.getInt("id"),
+                                rs.getInt("product_id"),
+                                rs.getString("author"),
+                                rs.getString("content"),
+                                rs.getString("created_at")
+                        ));
+                    }
                 }
+                log.info("[CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='{}' (name='{}') - So binh luan hien co: {}",
+                        id, product.getName(), comments.size());
+            } else {
+                log.warn("[CORE-06][READ][NOT_FOUND] San pham khong ton tai (vulnerable): id='{}'", id);
             }
         } catch (Exception e) {
+            log.warn("[CORE-06][READ][SQL_ERROR] Loi truy van chi tiet san pham id='{}': {}", id, e.getMessage());
             model.addAttribute("error", "Lỗi CSDL: " + e.getMessage());
         }
 
@@ -286,18 +293,66 @@ public class AppController {
 
     // Gửi bình luận sản phẩm (LỖ HỔNG STORED XSS & SQLi)
     @PostMapping({"/product", "/product.php"})
-    public String addComment(@RequestParam("product_id") String productId,
-                             @RequestParam(name = "author", defaultValue = "Khách hàng") String author,
-                             @RequestParam("content") String content) {
+    public String addComment(@RequestParam(name = "product_id", defaultValue = "") String productId,
+                             @RequestParam(name = "author", defaultValue = "") String author,
+                             @RequestParam(name = "content", defaultValue = "") String content,
+                             HttpSession session,
+                             HttpServletRequest request,
+                             RedirectAttributes redirectAttributes) {
+        User sessionUser = resolveSessionUser(session, request);
+        String resolvedAuthor = (author == null || author.trim().isEmpty())
+                ? ((sessionUser != null && sessionUser.getUsername() != null && !sessionUser.getUsername().isBlank())
+                    ? sessionUser.getUsername() : "Khách hàng")
+                : author;
+
+        log.info("[CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='{}', author='{}'",
+                productId, resolvedAuthor);
+
+        if (productId == null || productId.trim().isEmpty()) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan - Ma san pham rong");
+            redirectAttributes.addFlashAttribute("commentError", "Mã sản phẩm không hợp lệ!");
+            return "redirect:/";
+        }
+
+        if (content == null || content.trim().isEmpty()) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Noi dung rong hoac chi chua khoang trang",
+                    productId);
+            redirectAttributes.addFlashAttribute("commentError", "Nội dung bình luận không được để trống hoặc chỉ chứa khoảng trắng!");
+            return "redirect:/product?id=" + productId;
+        }
+
+        if (resolvedAuthor.trim().length() > 50) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Ten tac gia vuot qua 50 ky tu (len={})",
+                    productId, resolvedAuthor.trim().length());
+            redirectAttributes.addFlashAttribute("commentError", "Tên người bình luận không được vượt quá 50 ký tự!");
+            return "redirect:/product?id=" + productId;
+        }
+
+        if (content.trim().length() > 1000) {
+            log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Noi dung vuot qua 1000 ky tu (len={})",
+                    productId, content.trim().length());
+            redirectAttributes.addFlashAttribute("commentError", "Nội dung bình luận không được vượt quá 1000 ký tự!");
+            return "redirect:/product?id=" + productId;
+        }
+
         try (Connection conn = dbConfig.getConnection();
              Statement stmt = conn.createStatement()) {
 
-            // LƯU TRỰC TIẾP VÀO DATABASE MÀ KHÔNG SANITIZE / ENCODE
+            // LƯU TRỰC TIẾP VÀO DATABASE MÀ KHÔNG SANITIZE / ENCODE (Phục vụ Lab Stored XSS & Insert SQLi)
             String insertSql = "INSERT INTO comments (product_id, author, content) VALUES (" +
-                    productId + ", '" + author + "', '" + content + "')";
-            stmt.executeUpdate(insertSql);
+                    productId + ", '" + resolvedAuthor + "', '" + content + "')";
+            int rowsAffected = stmt.executeUpdate(insertSql);
+            if (rowsAffected > 0) {
+                log.info("[CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (vulnerable): product_id='{}', author='{}', rowsAffected={}",
+                        productId, resolvedAuthor, rowsAffected);
+                redirectAttributes.addFlashAttribute("commentSuccess", "Gửi bình luận đánh giá thành công!");
+            } else {
+                log.warn("[CORE-06][WRITE][DB_ERROR] Khong co ban ghi nao duoc luu cho product_id='{}' (rowsAffected=0)", productId);
+                redirectAttributes.addFlashAttribute("commentError", "Không thể lưu bình luận vào cơ sở dữ liệu!");
+            }
         } catch (Exception e) {
-            System.err.println("Lỗi thêm bình luận: " + e.getMessage());
+            log.error("[CORE-06][WRITE][DB_ERROR] Luu binh luan that bai cho product_id='{}' - Loi DB: {}", productId, e.getMessage());
+            redirectAttributes.addFlashAttribute("commentError", "Không thể lưu bình luận: Sản phẩm không tồn tại hoặc dữ liệu không hợp lệ!");
         }
 
         return "redirect:/product?id=" + productId;

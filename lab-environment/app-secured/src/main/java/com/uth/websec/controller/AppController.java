@@ -34,11 +34,16 @@ public class AppController {
 
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
     private static final String SECURED_TOKEN_SUFFIX = "_secured_token_8081";
+    public static final String GENERIC_SERVICE_ERROR_MSG =
+            "Đã xảy ra lỗi trong quá trình xử lý yêu cầu hoặc dịch vụ tạm thời chưa sẵn sàng. Vui lòng thử lại sau.";
 
     @Autowired
     private DbConfig dbConfig;
 
-    private User resolveSessionUser(HttpSession session, HttpServletRequest request) {
+    public User resolveSessionUser(HttpSession session, HttpServletRequest request) {
+        if (session == null) {
+            return null;
+        }
         User sessionUser = (User) session.getAttribute("user");
         if (sessionUser != null) {
             return sessionUser;
@@ -145,8 +150,8 @@ public class AppController {
             }
             log.info("[CORE-04][HOME] Hien thi trang chu (secured) - Tong so san pham: {}", products.size());
         } catch (Exception e) {
-            log.error("[CORE-04][HOME][ERROR] Loi truy van danh sach san pham: {}", e.getMessage());
-            model.addAttribute("error", "Lỗi CSDL: " + e.getMessage());
+            log.error("[CORE-07][SECURED][DB_ERROR] Loi truy van danh sach san pham trang chu: {}", e.getMessage());
+            model.addAttribute("error", GENERIC_SERVICE_ERROR_MSG);
         }
 
         model.addAttribute("products", products);
@@ -188,7 +193,8 @@ public class AppController {
                 log.info("[CORE-04][SEARCH][BLANK_KEYWORD] Tu khoa rong hoac chi chua khoang trang (raw='{}') -> Tra ve toan bo {} san pham mac dinh",
                         keyword, products.size());
             } catch (Exception e) {
-                log.warn("[CORE-04][SEARCH][SQL_ERROR] Loi truy van danh sach mac dinh: {}", e.getMessage());
+                log.error("[CORE-07][SECURED][DB_ERROR] Loi truy van danh sach mac dinh khi tim kiem: {}", e.getMessage());
+                model.addAttribute("error", GENERIC_SERVICE_ERROR_MSG);
             }
         } else {
             // PHÒNG THỦ SQL INJECTION: PreparedStatement phân tách mã SQL và dữ liệu
@@ -215,7 +221,8 @@ public class AppController {
                     log.info("[CORE-04][SEARCH][FOUND] Tu khoa='{}' -> Tim thay {} san pham", cleanKeyword, products.size());
                 }
             } catch (Exception e) {
-                log.warn("[CORE-04][SEARCH][SQL_ERROR] Tu khoa='{}' -> Loi tim kiem: {}", cleanKeyword, e.getMessage());
+                log.error("[CORE-07][SECURED][DB_ERROR] Tu khoa='{}' -> Loi truy van tim kiem: {}", cleanKeyword, e.getMessage());
+                model.addAttribute("error", GENERIC_SERVICE_ERROR_MSG);
             }
         }
 
@@ -294,8 +301,8 @@ public class AppController {
                     log.warn("[CORE-06][READ][NOT_FOUND] San pham khong ton tai (secured): id='{}'", idStr);
                 }
             } catch (Exception e) {
-                log.warn("[CORE-06][READ][SQL_ERROR] Loi truy van chi tiet san pham id='{}': {}", idStr, e.getMessage());
-                model.addAttribute("error", "Lỗi CSDL: " + e.getMessage());
+                log.error("[CORE-07][SECURED][DB_ERROR] Loi truy van chi tiet san pham id='{}': {}", idStr, e.getMessage());
+                model.addAttribute("error", GENERIC_SERVICE_ERROR_MSG);
             }
         } else {
             log.warn("[CORE-06][READ][NOT_FOUND] San pham khong ton tai hoac ID khong hop le (secured): id='{}'", idStr);
@@ -412,8 +419,17 @@ public class AppController {
                           HttpServletResponse response,
                           Model model) {
 
-        String cleanUser = username.trim();
-        String cleanPass = password.trim();
+        String cleanUser = (username == null) ? "" : username.trim();
+        String cleanPass = (password == null) ? "" : password.trim();
+
+        if (cleanUser.isEmpty() || cleanPass.isEmpty()) {
+            session.removeAttribute("user");
+            clearSecuredSessionCookie(response);
+            model.addAttribute("user", null);
+            model.addAttribute("message", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
+            log.warn("[CORE-07][AUTH][VALIDATION_FAILED] Dang nhap that bai (secured) - Thieu username hoac password");
+            return "login";
+        }
 
         // PHÒNG THỦ SQL INJECTION: PreparedStatement với tham số hóa ?
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
@@ -439,6 +455,8 @@ public class AppController {
 
                     // Thiết lập Cookie AN TOÀN: BẬT CỜ HTTPONLY
                     attachSecuredSessionCookie(user, response);
+                    log.info("[CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (secured) cho user='{}' (role='{}')",
+                            user.getUsername(), user.getRole());
 
                     return "redirect:/index.php";
                 } else {
@@ -446,6 +464,7 @@ public class AppController {
                     clearSecuredSessionCookie(response);
                     model.addAttribute("user", null);
                     model.addAttribute("message", "Tên đăng nhập hoặc mật khẩu không chính xác!");
+                    log.warn("[CORE-07][AUTH][INVALID_CREDENTIALS] Dang nhap sai thong tin (secured) cho username='{}'", cleanUser);
                     return "login";
                 }
             }
@@ -453,7 +472,8 @@ public class AppController {
             session.removeAttribute("user");
             clearSecuredSessionCookie(response);
             model.addAttribute("user", null);
-            model.addAttribute("message", "Lỗi hệ thống: " + e.getMessage());
+            log.error("[CORE-07][SECURED][DB_ERROR] Loi he thong khi xac thuc dang nhap cho user='{}': {}", cleanUser, e.getMessage());
+            model.addAttribute("message", GENERIC_SERVICE_ERROR_MSG);
             return "login";
         }
     }

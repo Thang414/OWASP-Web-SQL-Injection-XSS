@@ -38,7 +38,10 @@ public class AppController {
     @Autowired
     private DbConfig dbConfig;
 
-    private User resolveSessionUser(HttpSession session, HttpServletRequest request) {
+    public User resolveSessionUser(HttpSession session, HttpServletRequest request) {
+        if (session == null) {
+            return null;
+        }
         User sessionUser = (User) session.getAttribute("user");
         if (sessionUser != null) {
             return sessionUser;
@@ -382,6 +385,15 @@ public class AppController {
                           HttpServletResponse response,
                           Model model) {
 
+        if (username == null || username.trim().isEmpty()) {
+            session.removeAttribute("user");
+            clearVulnerableSessionCookie(response);
+            model.addAttribute("user", null);
+            model.addAttribute("message", "Vui lòng nhập tên đăng nhập!");
+            log.warn("[CORE-07][AUTH][VALIDATION_FAILED] Dang nhap that bai (vulnerable) - Ten dang nhap rong");
+            return "login";
+        }
+
         // LỖ HỔNG SQL INJECTION: Nối chuỗi xác thực tài khoản
         String sql = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
         System.out.println("[DEBUG SQL VULNERABLE LOGIN]: " + sql);
@@ -404,6 +416,8 @@ public class AppController {
 
                 // Thiết lập Cookie KHÔNG có cờ HttpOnly -> Dễ bị cướp qua XSS
                 attachVulnerableSessionCookie(user, response);
+                log.info("[CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (vulnerable) cho user='{}' (role='{}')",
+                        user.getUsername(), user.getRole());
 
                 return "redirect:/index.php";
             } else {
@@ -411,6 +425,7 @@ public class AppController {
                 clearVulnerableSessionCookie(response);
                 model.addAttribute("user", null);
                 model.addAttribute("message", "Tên đăng nhập hoặc mật khẩu không chính xác!");
+                log.warn("[CORE-07][AUTH][INVALID_CREDENTIALS] Dang nhap sai thong tin (vulnerable) cho username='{}'", username);
                 return "login";
             }
         } catch (Exception e) {
@@ -418,6 +433,7 @@ public class AppController {
             clearVulnerableSessionCookie(response);
             model.addAttribute("user", null);
             model.addAttribute("message", "Lỗi truy vấn SQL: " + e.getMessage());
+            log.error("[CORE-07][VULNERABLE][SQL_ERROR] Loi truy van dang nhap cho username='{}': {}", username, e.getMessage());
             return "login";
         }
     }

@@ -18,11 +18,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -183,13 +180,12 @@ class Xss01SafePocTest {
     }
 
     @Test
-    @DisplayName("XSS-01.5: Lop bo sung - cookie session_token cua app-secured co HttpOnly va SameSite=Strict")
-    void sessionCookieHasHttpOnly() throws Exception {
+    @DisplayName("XSS-01.5: Lop bo sung - app-secured khong phat hanh cookie cu session_token")
+    void noLegacySessionTokenIsIssued() throws Exception {
         mockMvc.perform(post("/login")
                         .param("username", "nguyenvana")
                         .param("password", "pass123456"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(header().stringValues("Set-Cookie",
-                        hasItem(allOf(startsWith("session_token="), containsString("HttpOnly"), containsString("SameSite=Strict")))));
+                .andExpect(header().doesNotExist("Set-Cookie"));
     }
 }

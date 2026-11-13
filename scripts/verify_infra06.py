@@ -19,7 +19,6 @@ if hasattr(sys.stderr, 'reconfigure'):
 
 VULN_BASE = "http://localhost:8080"
 SECURED_BASE = "http://localhost:8081"
-STEALER_BASE = "http://localhost:8888"
 
 SCREENSHOTS_DIR = os.path.join(os.path.dirname(__file__), "..", "docs", "tasks", "screenshots")
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
@@ -73,6 +72,7 @@ def run_tests():
             "title": title,
             "target": target,
             "result": status_str,
+            "passed": bool(result),
             "details": details
         })
         icon = "[✓]" if result else "[✗]"
@@ -97,19 +97,6 @@ def run_tests():
         )
     except Exception as e:
         record_step("INFRA-06-01", "Kết nối CSDL MariaDB", "websec_mysql_db", False, str(e))
-
-    # 1.2 Attacker Cookie Stealer Listener
-    try:
-        r_steal = requests.get(f"{STEALER_BASE}/steal?cookie=infra06_health_test", timeout=5)
-        record_step(
-            "INFRA-06-02",
-            "Dịch vụ lắng nghe cookie của kẻ tấn công (Cookie Stealer)",
-            "cookie-stealer (8888)",
-            r_steal.status_code == 200 and "Cookie logged successfully" in r_steal.text,
-            f"HTTP {r_steal.status_code}, Phản hồi: '{r_steal.text.strip()}'"
-        )
-    except Exception as e:
-        record_step("INFRA-06-02", "Cookie Stealer Listener", "cookie-stealer", False, str(e))
 
     # =========================================================================
     # 2. KIỂM TRA ỨNG DỤNG DÍNH LỖ HỔNG (VULNERABLE APP - PORT 8080)
@@ -232,7 +219,7 @@ def run_tests():
             "INFRA-06-09",
             "Tải trang chủ, nạp danh mục và kiểm tra Security Headers",
             "app-secured (8081)",
-            r_home_s.status_code == 200 and has_catalog_s and (has_csp or has_xframe),
+            r_home_s.status_code == 200 and has_catalog_s and (has_csp and has_xframe),
             f"HTTP {r_home_s.status_code}, CSP: {has_csp}, X-Frame-Options: {has_xframe}"
         )
         take_screenshot(f"{SECURED_BASE}/", "05_secured_homepage_8081.png")
@@ -353,8 +340,6 @@ def run_tests():
     except Exception as e:
         record_step("INFRA-06-15", "Quy trình reset CSDL", "websec_mysql_db", False, str(e))
 
-    # Chụp ảnh Cookie Stealer Listener
-    take_screenshot(f"{STEALER_BASE}/steal?cookie=mock_session_token_xyz", "09_cookie_stealer_listener_8888.png")
 
     # =========================================================================
     # TỔNG KẾT KẾT QUẢ
@@ -363,7 +348,7 @@ def run_tests():
     print(" BẢNG TỔNG HỢP KẾT QUẢ CHECKLIST TÍCH HỢP INFRA-06")
     print("=" * 70)
     total = len(checklist_results)
-    passed = sum(1 for item in checklist_results if "ĐẠT" in item["result"])
+    passed = sum(1 for item in checklist_results if item["passed"])
     failed = total - passed
 
     for item in checklist_results:

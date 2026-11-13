@@ -36,10 +36,10 @@ def reset_lab_database():
     return False
 
 
-def get_session_token_header(response):
-    """Trích xuất chuỗi Set-Cookie cho session_token từ raw response headers."""
+def get_session_cookie_header(response, cookie_name):
+    """Trích xuất chuỗi Set-Cookie cho cookie phiên từ raw response headers."""
     for k, v in response.raw.headers.items():
-        if k.lower() == "set-cookie" and "session_token=" in v:
+        if k.lower() == "set-cookie" and f"{cookie_name}=" in v:
             return v
     return ""
 
@@ -213,16 +213,16 @@ def run_matrix_tests():
     v_log_cookie = requests.post(f"{VULN_URL}/login", data={"username": "nguyenvana", "password": "pass123456"}, allow_redirects=False, timeout=5)
     s_log_cookie = requests.post(f"{SECURED_URL}/login", data={"username": "admin", "password": "admin123_super_secret"}, allow_redirects=False, timeout=5)
 
-    v_token_str = get_session_token_header(v_log_cookie)
-    s_token_str = get_session_token_header(s_log_cookie)
+    v_token_str = get_session_cookie_header(v_log_cookie, "session_token")
+    s_token_str = get_session_cookie_header(s_log_cookie, "SECUREDSESSION")
 
     v_cookie_insecure = "session_token" in v_token_str and "HttpOnly" not in v_token_str
-    s_cookie_secure = "session_token" in s_token_str and "HttpOnly" in s_token_str and "SameSite=Strict" in s_token_str
+    s_cookie_secure = "SECUREDSESSION" in s_token_str and "HttpOnly" in s_token_str and "SameSite=Strict" in s_token_str
     record_scenario(
         "SCN-SESS-01",
         "Phiên & Cookie",
-        "Set-Cookie Header (session_token)",
-        "Đăng nhập hợp lệ và sinh cookie phiên session_token",
+        "Set-Cookie Header",
+        "Đăng nhập hợp lệ và sinh cookie phiên tương ứng",
         f"Cookie thiếu cờ HttpOnly ({v_token_str[:45]}...) -> JavaScript đọc được",
         f"Có đầy đủ cờ bảo mật: HttpOnly; SameSite=Strict -> JavaScript bị chặn hoàn toàn",
         v_cookie_insecure and s_cookie_secure,
@@ -264,7 +264,7 @@ def run_matrix_tests():
     print(" BẢNG TỔNG HỢP MA TRẬN TIÊU CHÍ ĐỐI CHỨNG KỸ THUẬT (CORE-08)")
     print("=" * 80)
     total_scn = len(matrix_results)
-    passed_scn = sum(1 for item in matrix_results if "ĐẠT" in item["status"])
+    passed_scn = sum(1 for item in matrix_results if item["status"] == "ĐẠT (PASS)")
     failed_scn = total_scn - passed_scn
 
     print(f"| {'Mã ca':<11} | {'Hạng mục':<15} | {'Điểm cuối':<16} | {'Vulnerable (8080)':<17} | {'Secured (8081)':<16} | {'Kết quả':<10} |")

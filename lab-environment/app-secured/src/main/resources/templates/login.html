@@ -279,28 +279,28 @@
                     <td><code>pass123456</code></td>
                     <td>Nguyễn Văn A</td>
                     <td><code>customer</code></td>
-                    <td><button type="button" class="btn-fill" onclick="quickFill('nguyenvana', 'pass123456')">Điền</button></td>
+                    <td><button type="button" class="btn-fill" data-username="nguyenvana" data-password="pass123456">Điền</button></td>
                 </tr>
                 <tr>
                     <td><code>tranthib</code></td>
                     <td><code>passwordB123</code></td>
                     <td>Trần Thị B</td>
                     <td><code>customer</code></td>
-                    <td><button type="button" class="btn-fill" onclick="quickFill('tranthib', 'passwordB123')">Điền</button></td>
+                    <td><button type="button" class="btn-fill" data-username="tranthib" data-password="passwordB123">Điền</button></td>
                 </tr>
                 <tr>
                     <td><code>manager</code></td>
                     <td><code>manager@2026</code></td>
                     <td>Trưởng Phòng Kinh Doanh</td>
                     <td><code>manager</code></td>
-                    <td><button type="button" class="btn-fill" onclick="quickFill('manager', 'manager@2026')">Điền</button></td>
+                    <td><button type="button" class="btn-fill" data-username="manager" data-password="manager@2026">Điền</button></td>
                 </tr>
                 <tr>
                     <td><code>admin</code></td>
                     <td><code>admin123_super_secret</code></td>
                     <td>Quản Trị Viên Hệ Thống</td>
                     <td><code>admin</code></td>
-                    <td><button type="button" class="btn-fill" onclick="quickFill('admin', 'admin123_super_secret')">Điền</button></td>
+                    <td><button type="button" class="btn-fill" data-username="admin" data-password="admin123_super_secret">Điền</button></td>
                 </tr>
             </tbody>
         </table>
@@ -320,12 +320,7 @@
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
-<script>
-    function quickFill(user, pass) {
-        document.getElementById('username').value = user;
-        document.getElementById('password').value = pass;
-    }
-</script>
+<script src="/js/login.js" defer></script>
 
 </body>
 </html>

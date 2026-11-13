@@ -338,13 +338,13 @@ public class AppController {
             return "redirect:/product?id=" + productId;
         }
 
+        // Giữ điểm SQLi ở mã sản phẩm cho lab. Lưu văn bản bình luận nguyên dạng để minh họa Stored XSS.
+        String sql = "INSERT INTO comments (product_id, author, content) VALUES (" + productId + ", ?, ?)";
         try (Connection conn = dbConfig.getConnection();
-             Statement stmt = conn.createStatement()) {
-
-            // LƯU TRỰC TIẾP VÀO DATABASE MÀ KHÔNG SANITIZE / ENCODE (Phục vụ Lab Stored XSS & Insert SQLi)
-            String insertSql = "INSERT INTO comments (product_id, author, content) VALUES (" +
-                    productId + ", '" + resolvedAuthor + "', '" + content + "')";
-            int rowsAffected = stmt.executeUpdate(insertSql);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, resolvedAuthor);
+            pstmt.setString(2, content);
+            int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
                 log.info("[CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (vulnerable): product_id='{}', author='{}', rowsAffected={}",
                         productId, resolvedAuthor, rowsAffected);
@@ -396,7 +396,6 @@ public class AppController {
 
         // LỖ HỔNG SQL INJECTION: Nối chuỗi xác thực tài khoản
         String sql = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
-        System.out.println("[DEBUG SQL VULNERABLE LOGIN]: " + sql);
 
         try (Connection conn = dbConfig.getConnection();
              Statement stmt = conn.createStatement();

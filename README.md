@@ -61,7 +61,7 @@ mvn spring-boot:run
 - **Web TMĐT dính lỗ hổng (Vulnerable App - Java):** [http://localhost:8080](http://localhost:8080)
 - **Web TMĐT đã vá bảo mật (Secured App - Java):** [http://localhost:8081](http://localhost:8081)
 - **Database (MariaDB/MySQL):** `localhost:3306` (User: `db_user`, Pass: `P@ssword123`, DB: `ecommerce_db`)
-- **Attacker Cookie Stealer Listener:** [http://localhost:8888](http://localhost:8888)
+- **Attacker Cookie Stealer Listener (chỉ bật cho demo XSS bằng `docker compose --profile xss-demo up -d`):** [http://localhost:8888](http://localhost:8888)
 
 ---
 
@@ -76,7 +76,7 @@ Hai ứng dụng được thiết kế có cùng khung cấu trúc Spring Boot, 
 | **Xác thực và Đăng nhập** | Nối chuỗi SQL thô (`Statement`) -> Dính SQLi Auth Bypass | Câu lệnh tham số hóa (`PreparedStatement`) chống SQLi | `CORE-04`, `CORE-05`, `SQLI-05` |
 | **Tìm kiếm & Chi tiết SP** | Ghép chuỗi SQL trực tiếp (`LIKE '%keyword%'`) | Tham số hóa toàn bộ câu truy vấn qua `PreparedStatement` | `SQLI-02`, `SQLI-03`, `SQLI-08`, `SQLI-09` |
 | **Kết xuất giao diện HTML** | Dùng `th:utext` (không escape thẻ) -> Dính XSS thực thi mã | Dùng `th:text` (Thymeleaf auto-escaping chống XSS) | `XSS-02`, `XSS-03`, `XSS-07` |
-| **Bảo vệ Cookie & Phiên** | Cookie `session_token` đặt `HttpOnly=false` (cho phép cướp phiên) | `HttpOnly=true`, `SameSite=Strict`, `Secure=false` (Lab) | `CORE-05`, `XSS-10` |
+| **Bảo vệ Cookie & Phiên** | Cookie `session_token` đặt `HttpOnly=false` (cho phép cướp phiên) | Cookie `SECUREDSESSION` với `HttpOnly` và `SameSite=Strict`. Bật `SESSION_COOKIE_SECURE=true` khi dùng HTTPS | `CORE-05`, `XSS-10` |
 | **Tiêu đề phản hồi an toàn** | Không cấu hình Security Headers | Bộ lọc `SecurityHeadersFilter` bổ sung CSP, X-Frame-Options | `XSS-09` |
 | **Xử lý dữ liệu đầu vào** | Nhận chuỗi thô, không lọc thẻ nguy hiểm | Cắt tỉa khoảng trắng và giới hạn độ dài ký tự bình luận | `XSS-08` |
 
@@ -86,7 +86,7 @@ Hai ứng dụng được thiết kế có cùng khung cấu trúc Spring Boot, 
 
 ```text
 ├── README.md                      # Hướng dẫn tổng thể, công cụ, khởi chạy và phân biệt 2 app
-├── docker-compose.yml             # Khởi tạo toàn bộ môi trường Lab Docker (4 dịch vụ)
+├── docker-compose.yml             # Khởi tạo toàn bộ môi trường Lab Docker (3 dịch vụ mặc định)
 ├── .env.example                   # Tệp mẫu cấu hình biến môi trường kết nối CSDL và cổng
 ├── .gitignore                     # Cấu hình bỏ qua các file rác, target & .m2
 │

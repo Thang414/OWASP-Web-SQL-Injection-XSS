@@ -11,6 +11,12 @@ services:
       MYSQL_PASSWORD: P@ssword123
     volumes:
       - ./lab-environment/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=TCP -h 127.0.0.1 -u \"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" \"$$MYSQL_DATABASE\" -e 'SELECT 1 FROM products LIMIT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
     networks:
       - websec_net
 
@@ -23,7 +29,7 @@ services:
     container_name: websec_app_vulnerable
     restart: always
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       - SERVER_PORT=8080
       - DB_HOST=db
@@ -32,7 +38,8 @@ services:
       - DB_USER=db_user
       - DB_PASS=P@ssword123
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - websec_net
 
@@ -45,26 +52,29 @@ services:
     container_name: websec_app_secured
     restart: always
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       - SERVER_PORT=8081
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=ecommerce_db
       - DB_USER=db_user
       - DB_PASS=P@ssword123
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - websec_net
 
   # 4. Attacker Server - Lắng nghe hứng Cookie (Hỗ trợ Demo XSS cướp phiên)
   cookie-stealer:
+    profiles: ["xss-demo"]
     image: python:3.9-slim
     container_name: websec_cookie_stealer
     restart: always
     ports:
-      - "8888:8888"
+      - "127.0.0.1:8888:8888"
     volumes:
       - ./exploits/xss/cookie_stealer_server:/app
     working_dir: /app

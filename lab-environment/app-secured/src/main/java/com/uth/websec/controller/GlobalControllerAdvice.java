@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -25,7 +26,7 @@ public class GlobalControllerAdvice {
     @ModelAttribute
     public void populateCommonAttributes(HttpSession session, HttpServletRequest request, Model model) {
         if (!model.containsAttribute("user")) {
-            User user = appController.resolveSessionUser(session, request);
+            User user = appController.resolveSessionUser(session);
             model.addAttribute("user", user);
         }
         model.addAttribute("appMode", "SECURED APP :8081");
@@ -38,7 +39,7 @@ public class GlobalControllerAdvice {
                                  HttpServletResponse response,
                                  Model model) {
         response.setStatus(HttpStatus.NOT_FOUND.value());
-        User user = appController.resolveSessionUser(session, request);
+        User user = appController.resolveSessionUser(session);
         model.addAttribute("user", user);
         model.addAttribute("status", 404);
         model.addAttribute("errorTitle", "Không tìm thấy trang yêu cầu (404)");
@@ -53,8 +54,17 @@ public class GlobalControllerAdvice {
                                          HttpServletRequest request,
                                          HttpServletResponse response,
                                          Model model) {
+        if (ex instanceof ErrorResponse error && error.getStatusCode().is4xxClientError()) {
+            int status = error.getStatusCode().value();
+            error.getHeaders().forEach((name, values) -> values.forEach(value -> response.addHeader(name, value)));
+            response.setStatus(status);
+            model.addAttribute("status", status);
+            model.addAttribute("errorTitle", "Yêu cầu không hợp lệ (" + status + ")");
+            model.addAttribute("errorMessage", "Vui lòng kiểm tra lại yêu cầu.");
+            return "error";
+        }
         response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        User user = appController.resolveSessionUser(session, request);
+        User user = appController.resolveSessionUser(session);
         model.addAttribute("user", user);
         model.addAttribute("status", 500);
         model.addAttribute("errorTitle", "Dịch vụ tạm thời chưa sẵn sàng (500)");

@@ -4,15 +4,11 @@ import com.uth.websec.config.DbConfig;
 import com.uth.websec.model.Comment;
 import com.uth.websec.model.Product;
 import com.uth.websec.model.User;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,118 +17,31 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 @Controller
 public class AppController {
 
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
-    private static final String SECURED_TOKEN_SUFFIX = "_secured_token_8081";
     public static final String GENERIC_SERVICE_ERROR_MSG =
             "Đã xảy ra lỗi trong quá trình xử lý yêu cầu hoặc dịch vụ tạm thời chưa sẵn sàng. Vui lòng thử lại sau.";
 
     @Autowired
     private DbConfig dbConfig;
 
-    public User resolveSessionUser(HttpSession session, HttpServletRequest request) {
-        if (session == null) {
-            return null;
-        }
-        User sessionUser = (User) session.getAttribute("user");
-        if (sessionUser != null) {
-            return sessionUser;
-        }
-        if (request == null || request.getCookies() == null) {
-            return null;
-        }
-        for (Cookie cookie : request.getCookies()) {
-            if ("session_token".equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isBlank()) {
-                try {
-                    String decoded = new String(
-                            Base64.getDecoder().decode(cookie.getValue().trim()),
-                            StandardCharsets.UTF_8
-                    );
-                    if (decoded.endsWith(SECURED_TOKEN_SUFFIX)) {
-                        String username = decoded.substring(0, decoded.length() - SECURED_TOKEN_SUFFIX.length());
-                        if (!username.isBlank()) {
-                            User resolved = findUserByUsername(username);
-                            if (resolved != null) {
-                                session.setAttribute("user", resolved);
-                                return resolved;
-                            }
-                        }
-                    }
-                } catch (IllegalArgumentException ignored) {
-                    // Bỏ qua nếu cookie không đúng định dạng Base64
-                }
-            }
-        }
-        return null;
-    }
-
-    private User findUserByUsername(String username) {
-        String sql = "SELECT * FROM users WHERE username = ?";
-        try (Connection conn = dbConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, username);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return new User(
-                            rs.getInt("id"),
-                            rs.getString("username"),
-                            "",
-                            rs.getString("full_name"),
-                            rs.getString("role"),
-                            rs.getString("credit_card")
-                    );
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    private void attachSecuredSessionCookie(User user, HttpServletResponse response) {
-        String token = Base64.getEncoder().encodeToString(
-                (user.getUsername() + SECURED_TOKEN_SUFFIX).getBytes(StandardCharsets.UTF_8)
-        );
-        ResponseCookie cookie = ResponseCookie.from("session_token", token)
-                .httpOnly(true) // BẢO MẬT: Ngăn chặn JavaScript đọc trộm cookie qua XSS
-                .sameSite("Strict") // BẢO MẬT: Chống tấn công CSRF
-                .secure(false) // Đặt true khi chạy môi trường HTTPS
-                .path("/")
-                .maxAge(3600)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-    }
-
-    private void clearSecuredSessionCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from("session_token", "")
-                .httpOnly(true)
-                .sameSite("Strict")
-                .secure(false)
-                .path("/")
-                .maxAge(0)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    public User resolveSessionUser(HttpSession session) {
+        return session == null ? null : (User) session.getAttribute("user");
     }
 
     // 1. Trang chủ danh sách sản phẩm (Secured)
     @GetMapping({"/", "/index.php"})
-    public String index(HttpSession session, HttpServletRequest request, HttpServletResponse response, Model model) {
-        User user = resolveSessionUser(session, request);
+    public String index(HttpSession session, Model model) {
+        User user = resolveSessionUser(session);
         model.addAttribute("user", user);
-
-        // Đính kèm cookie phiên an toàn: BẬT CỜ HTTPONLY
-        if (user != null) {
-            attachSecuredSessionCookie(user, response);
-        }
 
         List<Product> products = new ArrayList<>();
         try (Connection conn = dbConfig.getConnection();
@@ -162,12 +71,11 @@ public class AppController {
     @GetMapping({"/search", "/search.php"})
     public String search(@RequestParam(name = "keyword", defaultValue = "") String keyword,
                          HttpSession session,
-                         HttpServletRequest request,
                          Model model) {
         String cleanKeyword = (keyword == null) ? "" : keyword.trim();
         boolean isBlankKeyword = cleanKeyword.isEmpty();
 
-        User user = resolveSessionUser(session, request);
+        User user = resolveSessionUser(session);
         model.addAttribute("user", user);
         model.addAttribute("keyword", cleanKeyword);
         model.addAttribute("isBlankSearch", isBlankKeyword);
@@ -234,18 +142,16 @@ public class AppController {
     @GetMapping("/products/{id}")
     public String productDetailByPath(@PathVariable("id") String id,
                                       HttpSession session,
-                                      HttpServletRequest request,
                                       Model model) {
-        return productDetail(id, session, request, model);
+        return productDetail(id, session, model);
     }
 
     // 3. Chi tiết sản phẩm & Bình luận (Secured)
     @GetMapping({"/product", "/product.php"})
     public String productDetail(@RequestParam(name = "id", defaultValue = "1") String idStr,
                                 HttpSession session,
-                                HttpServletRequest request,
                                 Model model) {
-        User user = resolveSessionUser(session, request);
+        User user = resolveSessionUser(session);
         model.addAttribute("user", user);
 
         int id = -1;
@@ -319,9 +225,8 @@ public class AppController {
                              @RequestParam(name = "author", defaultValue = "") String author,
                              @RequestParam(name = "content", defaultValue = "") String content,
                              HttpSession session,
-                             HttpServletRequest request,
                              RedirectAttributes redirectAttributes) {
-        User sessionUser = resolveSessionUser(session, request);
+        User sessionUser = resolveSessionUser(session);
         String cleanAuthor = (author == null || author.trim().isEmpty())
                 ? ((sessionUser != null && sessionUser.getUsername() != null && !sessionUser.getUsername().isBlank())
                     ? sessionUser.getUsername() : "Khách hàng")
@@ -399,9 +304,8 @@ public class AppController {
     @GetMapping({"/login", "/login.php"})
     public String loginPage(@RequestParam(name = "logout", required = false) String logout,
                             HttpSession session,
-                            HttpServletRequest request,
                             Model model) {
-        User user = resolveSessionUser(session, request);
+        User user = resolveSessionUser(session);
         model.addAttribute("user", user);
         if (!model.containsAttribute("message")) {
             model.addAttribute("message", null);
@@ -416,7 +320,7 @@ public class AppController {
     public String doLogin(@RequestParam(name = "username", defaultValue = "") String username,
                           @RequestParam(name = "password", defaultValue = "") String password,
                           HttpSession session,
-                          HttpServletResponse response,
+                          HttpServletRequest request,
                           Model model) {
 
         String cleanUser = (username == null) ? "" : username.trim();
@@ -424,7 +328,6 @@ public class AppController {
 
         if (cleanUser.isEmpty() || cleanPass.isEmpty()) {
             session.removeAttribute("user");
-            clearSecuredSessionCookie(response);
             model.addAttribute("user", null);
             model.addAttribute("message", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
             log.warn("[CORE-07][AUTH][VALIDATION_FAILED] Dang nhap that bai (secured) - Thieu username hoac password");
@@ -451,17 +354,15 @@ public class AppController {
                             rs.getString("credit_card")
                     );
 
+                    request.changeSessionId();
                     session.setAttribute("user", user);
 
-                    // Thiết lập Cookie AN TOÀN: BẬT CỜ HTTPONLY
-                    attachSecuredSessionCookie(user, response);
                     log.info("[CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (secured) cho user='{}' (role='{}')",
                             user.getUsername(), user.getRole());
 
                     return "redirect:/index.php";
                 } else {
                     session.removeAttribute("user");
-                    clearSecuredSessionCookie(response);
                     model.addAttribute("user", null);
                     model.addAttribute("message", "Tên đăng nhập hoặc mật khẩu không chính xác!");
                     log.warn("[CORE-07][AUTH][INVALID_CREDENTIALS] Dang nhap sai thong tin (secured) cho username='{}'", cleanUser);
@@ -470,7 +371,6 @@ public class AppController {
             }
         } catch (Exception e) {
             session.removeAttribute("user");
-            clearSecuredSessionCookie(response);
             model.addAttribute("user", null);
             log.error("[CORE-07][SECURED][DB_ERROR] Loi he thong khi xac thuc dang nhap cho user='{}': {}", cleanUser, e.getMessage());
             model.addAttribute("message", GENERIC_SERVICE_ERROR_MSG);
@@ -480,9 +380,8 @@ public class AppController {
 
     // 5. Đăng xuất
     @GetMapping({"/logout", "/logout.php"})
-    public String logout(HttpSession session, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+    public String logout(HttpSession session, RedirectAttributes redirectAttributes) {
         session.invalidate();
-        clearSecuredSessionCookie(response);
         redirectAttributes.addFlashAttribute("logoutMessage", "Bạn đã đăng xuất khỏi phiên làm việc thành công.");
         return "redirect:/login.php";
     }

@@ -1,0 +1,54 @@
+================================================================================
+NHẬT KÝ KIỂM THỬ VÀ MINH CHỨNG LOG SERVER CHO TASK CORE-04 (ANM-20)
+Thời gian ghi nhận: 2026-11-10 18:20:06 +07:00
+Phạm vi phụ trách: TV2 - Hồng Sơn
+Tên công việc: Tạo trang chủ, danh sách và tìm kiếm sản phẩm
+Mục tiêu: Hoàn thiện trang chủ, danh sách và tìm kiếm sản phẩm ở cả hai ứng dụng (app-vulnerable & app-secured)
+================================================================================
+
+1. TỔNG HỢP KẾT QUẢ CHẠY BỘ KIỂM THỬ TỰ ĐỘNG MAVEN (JUNIT 5 & MOCKMVC)
+--------------------------------------------------------------------------------
+- Ứng dụng dính lỗi (app-vulnerable - Cổng 8080):
+  + Core04HomeAndSearchTest: Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 (Time elapsed: 6.099 s)
+  + Core05LoginSessionTest:  Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 (Time elapsed: 2.388 s)
+  + ModelMappingTest:        Tests run: 3, Failures: 0, Errors: 0, Skipped: 0 (Time elapsed: 0.023 s)
+  => Tổng cộng: Tests run: 13, Failures: 0, Errors: 0, Skipped: 0 -> BUILD SUCCESS (20.499 s)
+
+- Ứng dụng đã vá bảo mật (app-secured - Cổng 8081):
+  + Core04HomeAndSearchTest: Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 (Time elapsed: 4.152 s)
+  + Core05LoginSessionTest:  Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 (Time elapsed: 1.248 s)
+  + ModelMappingTest:        Tests run: 3, Failures: 0, Errors: 0, Skipped: 0 (Time elapsed: 0.014 s)
+  => Tổng cộng: Tests run: 13, Failures: 0, Errors: 0, Skipped: 0 -> BUILD SUCCESS (12.483 s)
+
+2. NHẬT KÝ SERVER LOG CHI TIẾT TRÊN BẢN VULNERABLE (websec-app-vulnerable - CỔNG 8080)
+--------------------------------------------------------------------------------
+2026-11-10T18:18:38.424+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] com.uth.websec.Core04HomeAndSearchTest   : Started Core04HomeAndSearchTest in 2.592 seconds (process running for 3.895)
+2026-11-10T18:18:40.008+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][BLANK_KEYWORD] Tu khoa rong hoac chi chua khoang trang (raw='') -> Tra ve toan bo 5 san pham mac dinh
+2026-11-10T18:18:40.833+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][BLANK_KEYWORD] Tu khoa rong hoac chi chua khoang trang (raw='   ') -> Tra ve toan bo 5 san pham mac dinh
+2026-11-10T18:18:40.917+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (vulnerable) - Tong so san pham: 5
+2026-11-10T18:18:40.990+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='Nokia1280KhongTonTai' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T18:18:41.046+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (vulnerable) - Tong so san pham: 5
+2026-11-10T18:18:41.219+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='iPhone' -> Tim thay 1 san pham
+2026-11-10T18:18:41.240+07:00  INFO 26592 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='M' -> Tim thay 3 san pham
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.099 s -- in com.uth.websec.Core04HomeAndSearchTest
+
+3. NHẬT KÝ SERVER LOG CHI TIẾT TRÊN BẢN SECURED (websec-app-secured - CỔNG 8081)
+--------------------------------------------------------------------------------
+2026-11-10T18:20:02.655+07:00  INFO 22952 --- [websec-app-secured] [           main] com.uth.websec.Core04HomeAndSearchTest   : Started Core04HomeAndSearchTest in 1.728 seconds (process running for 2.722)
+2026-11-10T18:20:03.574+07:00  INFO 22952 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][BLANK_KEYWORD] Tu khoa rong hoac chi chua khoang trang (raw='') -> Tra ve toan bo 5 san pham mac dinh
+2026-11-10T18:20:04.242+07:00  INFO 22952 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][BLANK_KEYWORD] Tu khoa rong hoac chi chua khoang trang (raw='   ') -> Tra ve toan bo 5 san pham mac dinh
+2026-11-10T18:20:04.318+07:00  INFO 22952 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (secured) - Tong so san pham: 5
+2026-11-10T18:20:04.409+07:00  INFO 22952 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='Nokia1280KhongTonTai' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T18:20:04.454+07:00  INFO 22952 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (secured) - Tong so san pham: 5
+2026-11-10T18:20:04.598+07:00  INFO 22952 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='iPhone' -> Tim thay 1 san pham
+2026-11-10T18:20:04.612+07:00  INFO 22952 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='M' -> Tim thay 3 san pham
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.152 s -- in com.uth.websec.Core04HomeAndSearchTest
+
+================================================================================
+KẾT LUẬN NGHIỆM THU:
+Cả 3 tiêu chí hoàn thành của CORE-04 (ANM-20) gồm:
+1. Trang chủ & Danh sách sản phẩm kèm link điều hướng sang trang chi tiết (/product?id=... & /products/{id})
+2. Chức năng tìm kiếm xử lý trọn vẹn 3 trường hợp (Có kết quả / Không có kết quả / Rỗng hoặc chỉ khoảng trắng) không lỗi 500
+3. Tính tương đương 100% giữa hai phiên bản với dữ liệu hợp lệ và ghi log Server đầy đủ
+đã được kiểm chứng thành công trên cả hai ứng dụng.
+================================================================================

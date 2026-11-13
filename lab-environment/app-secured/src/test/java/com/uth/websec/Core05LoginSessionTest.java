@@ -8,11 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpHeaders;
+import jakarta.servlet.http.Cookie;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -87,11 +86,12 @@ class Core05LoginSessionTest {
     }
 
     @Test
-    @DisplayName("CORE-05.2: Đăng nhập đúng tài khoản giả lập chuyển về trang chủ, bật cờ HttpOnly và hiển thị đúng tên/quyền")
+    @DisplayName("CORE-05.2: Đăng nhập đúng tài khoản giả lập chuyển về trang chủ, đổi mã phiên và hiển thị đúng tên/quyền")
     void testValidLoginWithMockAccountRedirectsToHomeAndDisplaysUserRole() throws Exception {
         MockHttpSession session = new MockHttpSession();
 
-        MvcResult loginResult = mockMvc.perform(post("/login")
+        String anonymousSessionId = session.getId();
+        mockMvc.perform(post("/login")
                         .param("username", "nguyenvana")
                         .param("password", "pass123456")
                         .session(session))
@@ -105,11 +105,7 @@ class Core05LoginSessionTest {
         assertThat(loggedInUser.getFullName()).isEqualTo("Nguyễn Văn A");
         assertThat(loggedInUser.getRole()).isEqualTo("customer");
 
-        String setCookieHeader = loginResult.getResponse().getHeader(HttpHeaders.SET_COOKIE);
-        assertThat(setCookieHeader).isNotNull();
-        assertThat(setCookieHeader).contains("session_token=");
-        assertThat(setCookieHeader).contains("HttpOnly");
-        assertThat(setCookieHeader).contains("SameSite=Strict");
+        assertThat(session.getId()).isNotEqualTo(anonymousSessionId);
 
         mockMvc.perform(get("/index.php").session(session))
                 .andExpect(status().isOk())
@@ -182,7 +178,7 @@ class Core05LoginSessionTest {
     }
 
     @Test
-    @DisplayName("CORE-05.5: Đăng xuất hủy HttpSession, xóa cookie phiên và đưa trang chủ về trạng thái chưa đăng nhập")
+    @DisplayName("CORE-05.5: Đăng xuất hủy HttpSession và đưa trang chủ về trạng thái chưa đăng nhập")
     void testLogoutInvalidatesHttpSessionClearsCookieAndResetsHomeState() throws Exception {
         MockHttpSession session = new MockHttpSession();
 
@@ -195,21 +191,28 @@ class Core05LoginSessionTest {
 
         assertThat(session.getAttribute("user")).isNotNull();
 
-        MvcResult logoutResult = mockMvc.perform(get("/logout").session(session))
+        mockMvc.perform(get("/logout").session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login.php"))
                 .andReturn();
 
         assertThat(session.isInvalid()).isTrue();
-        String setCookieHeader = logoutResult.getResponse().getHeader(HttpHeaders.SET_COOKIE);
-        assertThat(setCookieHeader).isNotNull();
-        assertThat(setCookieHeader).contains("session_token=");
-        assertThat(setCookieHeader).contains("Max-Age=0");
 
         // Tải lại trang chủ sau khi đăng xuất
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Đăng nhập")))
                 .andExpect(content().string(not(containsString("Nguyễn Văn A (nguyenvana)"))));
+    }
+
+    @Test
+    void forgedLegacyCookieDoesNotAuthenticate() throws Exception {
+        String forged = java.util.Base64.getEncoder().encodeToString(
+                "admin_secured_token_8081".getBytes(StandardCharsets.UTF_8));
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(get("/").session(session).cookie(new Cookie("session_token", forged)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("(Quyền: admin)"))));
+        assertThat(session.getAttribute("user")).isNull();
     }
 }

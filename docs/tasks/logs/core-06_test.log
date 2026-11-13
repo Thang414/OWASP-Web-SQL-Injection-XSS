@@ -1,0 +1,145 @@
+================================================================================
+LOG KIỂM THỬ TỰ ĐỘNG & MINH CHỨNG LUỒNG ĐỌC / GHI - TASK CORE-06 (ANM-22)
+Tạo trang chi tiết sản phẩm và khu vực bình luận (app-vulnerable & app-secured)
+Thời gian thực thi: 2026-11-10T18:57:42+07:00 -> 2026-11-10T18:58:49+07:00
+Phạm vi phụ trách: TV2 - Hồng Sơn
+================================================================================
+
+--------------------------------------------------------------------------------
+PHẦN 1: KẾT QUẢ CHẠY MAVEN TEST & LOG SERVER TRÊN APP-VULNERABLE (PORT 8080)
+Lệnh thực thi: mvn test (Project: websec-app-vulnerable)
+--------------------------------------------------------------------------------
+[INFO] Scanning for projects...
+[INFO] -----------------------< com.uth:websec-app-vulnerable >------------------------
+[INFO] Building UTH E-Shop Vulnerable Web App (Spring Boot) 1.0.0
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] --- surefire:3.1.2:test (default-test) @ websec-app-vulnerable ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.uth.websec.Core04HomeAndSearchTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.812 s -- in com.uth.websec.Core04HomeAndSearchTest
+[INFO] Running com.uth.websec.Core05LoginSessionTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.198 s -- in com.uth.websec.Core05LoginSessionTest
+[INFO] Running com.uth.websec.Core06ProductDetailAndCommentTest
+2026-11-10T18:57:42.629+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.u.w.Core06ProductDetailAndCommentTest  : Starting Core06ProductDetailAndCommentTest using Java 25.0.3 with PID 23712
+2026-11-10T18:57:43.339+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.u.w.Core06ProductDetailAndCommentTest  : Started Core06ProductDetailAndCommentTest in 0.826 seconds
+2026-11-10T18:57:43.430+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='999', author='Hồng Sơn'
+2026-11-10T18:57:43.437+07:00 ERROR 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][DB_ERROR] Luu binh luan that bai cho product_id='999' - Loi DB: Referential integrity constraint violation: "CONSTRAINT_DC: public.comments FOREIGN KEY(product_id) REFERENCES public.products(id) (999)"; SQL statement:
+INSERT INTO comments (product_id, author, content) VALUES (999, 'Hồng Sơn', 'Thử gửi bình luận cho sản phẩm không tồn tại') [23506-224]
+2026-11-10T18:57:43.470+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='1', author='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+2026-11-10T18:57:43.470+07:00  WARN 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Ten tac gia vuot qua 50 ky tu (len=55)
+2026-11-10T18:57:43.473+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='1', author='Hồng Sơn'
+2026-11-10T18:57:43.473+07:00  WARN 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung vuot qua 1000 ky tu (len=1005)
+2026-11-10T18:57:43.479+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+2026-11-10T18:57:43.557+07:00  WARN 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai (vulnerable): id='999'
+2026-11-10T18:57:43.575+07:00  WARN 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][SQL_ERROR] Loi truy van chi tiet san pham id='invalid_id': Column "invalid_id" not found; SQL statement:
+SELECT * FROM products WHERE id = invalid_id [42122-224]
+2026-11-10T18:57:43.614+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+2026-11-10T18:57:43.638+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='3' (name='Laptop Dell XPS 15') - So binh luan hien co: 0
+2026-11-10T18:57:43.682+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='1', author='Hồng Sơn'
+2026-11-10T18:57:43.683+07:00  WARN 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T18:57:43.684+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='1', author='Hồng Sơn'
+2026-11-10T18:57:43.686+07:00  WARN 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T18:57:43.690+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+2026-11-10T18:57:43.737+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='1', author='Hồng Sơn'
+2026-11-10T18:57:43.739+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (vulnerable): product_id='1', author='Hồng Sơn', rowsAffected=1
+2026-11-10T18:57:43.744+07:00  INFO 23712 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 3
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.305 s -- in com.uth.websec.Core06ProductDetailAndCommentTest
+[INFO] Running com.uth.websec.ModelMappingTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.057 s -- in com.uth.websec.ModelMappingTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+PHẦN 2: KẾT QUẢ CHẠY MAVEN TEST & LOG SERVER TRÊN APP-SECURED (PORT 8081)
+Lệnh thực thi: mvn test (Project: websec-app-secured)
+--------------------------------------------------------------------------------
+[INFO] Scanning for projects...
+[INFO] ------------------------< com.uth:websec-app-secured >-------------------------
+[INFO] Building UTH E-Shop Secured Web App (Spring Boot) 1.0.0
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] --- surefire:3.1.2:test (default-test) @ websec-app-secured ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.uth.websec.Core04HomeAndSearchTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.520 s -- in com.uth.websec.Core04HomeAndSearchTest
+[INFO] Running com.uth.websec.Core05LoginSessionTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.174 s -- in com.uth.websec.Core05LoginSessionTest
+[INFO] Running com.uth.websec.Core06ProductDetailAndCommentTest
+2026-11-10T18:58:47.918+07:00  INFO 19048 --- [websec-app-secured] [           main] c.u.w.Core06ProductDetailAndCommentTest  : Starting Core06ProductDetailAndCommentTest using Java 25.0.3 with PID 19048
+2026-11-10T18:58:48.551+07:00  INFO 19048 --- [websec-app-secured] [           main] c.u.w.Core06ProductDetailAndCommentTest  : Started Core06ProductDetailAndCommentTest in 0.695 seconds
+2026-11-10T18:58:48.607+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='999', author='Hồng Sơn'
+2026-11-10T18:58:48.611+07:00 ERROR 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][DB_ERROR] Luu binh luan that bai cho product_id='999' - Loi DB: Referential integrity constraint violation: "CONSTRAINT_DC: public.comments FOREIGN KEY(product_id) REFERENCES public.products(id) (999)"; SQL statement:
+INSERT INTO comments (product_id, author, content) VALUES (?, ?, ?) [23506-224]
+2026-11-10T18:58:48.636+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='1', author='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+2026-11-10T18:58:48.636+07:00  WARN 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Ten tac gia vuot qua 50 ky tu (len=55)
+2026-11-10T18:58:48.638+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='1', author='Hồng Sơn'
+2026-11-10T18:58:48.638+07:00  WARN 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung vuot qua 1000 ky tu (len=1005)
+2026-11-10T18:58:48.642+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+2026-11-10T18:58:48.700+07:00  WARN 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai (secured): id='999'
+2026-11-10T18:58:48.708+07:00  WARN 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai hoac ID khong hop le (secured): id='invalid_id'
+2026-11-10T18:58:48.743+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+2026-11-10T18:58:48.756+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='3' (name='Laptop Dell XPS 15') - So binh luan hien co: 0
+2026-11-10T18:58:48.784+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='1', author='Hồng Sơn'
+2026-11-10T18:58:48.784+07:00  WARN 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T18:58:48.788+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='1', author='Hồng Sơn'
+2026-11-10T18:58:48.788+07:00  WARN 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T18:58:48.792+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+2026-11-10T18:58:48.849+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='1', author='Hồng Sơn'
+2026-11-10T18:58:48.850+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (secured): product_id='1', author='Hồng Sơn', rowsAffected=1
+2026-11-10T18:58:48.856+07:00  INFO 19048 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 3
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.040 s -- in com.uth.websec.Core06ProductDetailAndCommentTest
+[INFO] Running com.uth.websec.ModelMappingTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s -- in com.uth.websec.ModelMappingTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+PHẦN 3: BẢNG ĐỐI CHIẾU HÀNH VI ĐỌC / GHI & BẢO VỆ STORED XSS HAI PHIÊN BẢN
+--------------------------------------------------------------------------------
+[CASE 1] GET /product?id=1 (Xem chi tiết sản phẩm mẫu hợp lệ):
+  - app-vulnerable: HTTP 200 OK | Sản phẩm: "iPhone 15 Pro Max" | Giá: "29.990.000 VNĐ" | Số bình luận: 2 (Nguyễn Văn A, Trần Thị B) -> PASS
+  - app-secured   : HTTP 200 OK | Sản phẩm: "iPhone 15 Pro Max" | Giá: "29.990.000 VNĐ" | Số bình luận: 2 (Nguyễn Văn A, Trần Thị B) -> PASS
+
+[CASE 2] GET /product?id=999 & GET /product?id=invalid_id (Sản phẩm không tồn tại / ID sai):
+  - app-vulnerable: HTTP 200 OK | product = null | Hiển thị: "Sản phẩm không tồn tại hoặc đã bị xóa!" -> PASS
+  - app-secured   : HTTP 200 OK | product = null | Hiển thị: "Sản phẩm không tồn tại hoặc đã bị xóa!" -> PASS
+
+[CASE 3] POST /product (product_id=1, author="Hồng Sơn", content="Sản phẩm chính hãng...") -> Reload GET /product?id=1:
+  - app-vulnerable: HTTP 302 Redirect -> Flash commentSuccess="Gửi bình luận đánh giá thành công!" | Reload: 3 bình luận, tác giả "Hồng Sơn" -> PASS
+  - app-secured   : HTTP 302 Redirect -> Flash commentSuccess="Gửi bình luận đánh giá thành công!" | Reload: 3 bình luận, tác giả "Hồng Sơn" -> PASS
+
+[CASE 4] POST /product với nội dung rỗng ("") hoặc chỉ chứa khoảng trắng ("   \t\n  "):
+  - app-vulnerable: Từ chối lưu DB | Flash commentError="Nội dung bình luận không được để trống hoặc chỉ chứa khoảng trắng!" | Số bình luận giữ nguyên = 2 -> PASS
+  - app-secured   : Từ chối lưu DB | Flash commentError="Nội dung bình luận không được để trống hoặc chỉ chứa khoảng trắng!" | Số bình luận giữ nguyên = 2 -> PASS
+
+[CASE 5] POST /product với đầu vào vượt quá giới hạn (author > 50 ký tự, content > 1000 ký tự):
+  - app-vulnerable: Từ chối lưu DB | Flash commentError tương ứng | Số bình luận giữ nguyên = 2 -> PASS
+  - app-secured   : Từ chối lưu DB | Flash commentError tương ứng | Số bình luận giữ nguyên = 2 -> PASS
+
+[CASE 6] POST /product với product_id=999 (Lưu thất bại do vi phạm khóa ngoại CSDL):
+  - app-vulnerable: Không báo thành công giả (commentSuccess = null) | Flash commentError="Không thể lưu bình luận: Sản phẩm không tồn tại hoặc dữ liệu không hợp lệ!" -> PASS
+  - app-secured   : Không báo thành công giả (commentSuccess = null) | Flash commentError="Không thể lưu bình luận: Sản phẩm không tồn tại hoặc dữ liệu không hợp lệ!" -> PASS
+
+[CASE 7] Khác biệt xử lý Stored XSS trên khu vực bình luận (Kiểm chứng cùng nhóm XSS - SCN-XSS-02):
+  - app-vulnerable: Render bằng <div class="comment-body" th:utext="${c.content}"></div> (Unescaped HTML -> Thực thi <script> phục vụ Lab Stored XSS).
+  - app-secured   : Render bằng <div class="comment-body" th:text="${c.content}"></div> + Header CSP (HTML Entity Encoding -> Mã hóa <script> thành &lt;script&gt; an toàn).
+================================================================================

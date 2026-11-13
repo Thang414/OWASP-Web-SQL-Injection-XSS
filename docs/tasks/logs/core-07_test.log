@@ -1,0 +1,123 @@
+================================================================================
+NHẬT KÝ KIỂM THỬ CHỨC NĂNG TASK CORE-07 (ANM-23)
+Hoàn thiện navbar, layout và thông báo lỗi
+Thực hiện: TV2 - Hồng Sơn
+================================================================================
+
+--------------------------------------------------------------------------------
+PHẦN 1: KẾT QUẢ CHẠY BỘ KIỂM THỬ TỰ ĐỘNG TRÊN APP-VULNERABLE (PORT 8080)
+Lệnh thực thi: mvn test (tại lab-environment/app-vulnerable)
+--------------------------------------------------------------------------------
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Building websec-app-vulnerable 1.0.0
+[INFO] ------------------------------------------------------------------------
+[INFO] --- surefire:3.1.2:test (default-test) @ websec-app-vulnerable ---
+[INFO] Running com.uth.websec.Core04HomeAndSearchTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 -- in com.uth.websec.Core04HomeAndSearchTest
+[INFO] Running com.uth.websec.Core05AuthAndSessionTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 -- in com.uth.websec.Core05AuthAndSessionTest
+[INFO] Running com.uth.websec.Core06ProductDetailAndCommentTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0 -- in com.uth.websec.Core06ProductDetailAndCommentTest
+[INFO] Running com.uth.websec.Core07NavbarLayoutAndErrorTest
+
+# Log thực thi CORE-07.1 & CORE-07.2 (Navbar, Layout dùng chung & Trạng thái người dùng nhất quán):
+2026-11-10T20:06:31.583+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (vulnerable) - Tong so san pham: 5
+2026-11-10T20:06:31.629+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='iPhone' -> Tim thay 1 san pham
+2026-11-10T20:06:31.647+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+
+# Log thực thi CORE-07.6 (Luồng thương mại điện tử đầy đủ End-to-End 9 bước):
+2026-11-10T20:06:31.792+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (vulnerable) - Tong so san pham: 5
+2026-11-10T20:06:31.812+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='Laptop' -> Tim thay 1 san pham
+2026-11-10T20:06:31.830+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='3' (name='Laptop Dell XPS 15') - So binh luan hien co: 0
+2026-11-10T20:06:31.852+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][INVALID_CREDENTIALS] Dang nhap sai thong tin (vulnerable) cho username='nguyenvana'
+2026-11-10T20:06:31.875+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (vulnerable) cho user='nguyenvana' (role='customer')
+2026-11-10T20:06:31.882+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='3', author='nguyenvana'
+2026-11-10T20:06:31.882+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='3' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T20:06:31.889+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (vulnerable): product_id='3', author='nguyenvana'
+2026-11-10T20:06:31.890+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (vulnerable): product_id='3', author='nguyenvana', rowsAffected=1
+2026-11-10T20:06:31.895+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (vulnerable) id='3' (name='Laptop Dell XPS 15') - So binh luan hien co: 1
+2026-11-10T20:06:31.924+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai (vulnerable): id='999'
+2026-11-10T20:06:31.952+07:00  INFO 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (vulnerable) - Tong so san pham: 5
+
+# Log thực thi CORE-07.3 & CORE-07.4 (Thông báo lỗi đăng nhập sai, sản phẩm không tồn tại, lưu bình luận thất bại & dịch vụ CSDL chưa sẵn sàng):
+2026-11-10T20:06:31.995+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][VALIDATION_FAILED] Dang nhap that bai (vulnerable) - Ten dang nhap rong
+2026-11-10T20:06:32.009+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][INVALID_CREDENTIALS] Dang nhap sai thong tin (vulnerable) cho username='nguyenvana'
+2026-11-10T20:06:32.028+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai (vulnerable): id='999'
+2026-11-10T20:06:32.049+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T20:06:32.055+07:00 ERROR 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][DB_ERROR] Luu binh luan that bai cho product_id='999' - Loi DB: Referential integrity constraint violation
+2026-11-10T20:06:32.098+07:00 ERROR 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME][ERROR] Loi truy van danh sach san pham: Table "products" not found (this database is empty); SQL statement: SELECT * FROM products [42104-224]
+2026-11-10T20:06:32.140+07:00  WARN 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][SQL_ERROR] Loi truy van chi tiet san pham id='1': Table "products" not found (this database is empty); SQL statement: SELECT * FROM products WHERE id = 1 [42104-224]
+2026-11-10T20:06:32.168+07:00 ERROR 22056 --- [websec-app-vulnerable] [           main] c.uth.websec.controller.AppController    : [CORE-07][VULNERABLE][SQL_ERROR] Loi truy van dang nhap cho username='nguyenvana': Table "users" not found (this database is empty); SQL statement: SELECT * FROM users WHERE username = 'nguyenvana' AND password = 'pass123456' [42104-224]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.184 s -- in com.uth.websec.Core07NavbarLayoutAndErrorTest
+[INFO] Running com.uth.websec.ModelMappingTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.uth.websec.ModelMappingTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+PHẦN 2: KẾT QUẢ CHẠY BỘ KIỂM THỬ TỰ ĐỘNG TRÊN APP-SECURED (PORT 8081)
+Lệnh thực thi: mvn test (tại lab-environment/app-secured)
+--------------------------------------------------------------------------------
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Building websec-app-secured 1.0.0
+[INFO] ------------------------------------------------------------------------
+[INFO] --- surefire:3.1.2:test (default-test) @ websec-app-secured ---
+[INFO] Running com.uth.websec.Core04HomeAndSearchTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 -- in com.uth.websec.Core04HomeAndSearchTest
+[INFO] Running com.uth.websec.Core05AuthAndSessionTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0 -- in com.uth.websec.Core05AuthAndSessionTest
+[INFO] Running com.uth.websec.Core06ProductDetailAndCommentTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0 -- in com.uth.websec.Core06ProductDetailAndCommentTest
+[INFO] Running com.uth.websec.Core07NavbarLayoutAndErrorTest
+
+# Log thực thi CORE-07.1 & CORE-07.2 (Navbar, Layout dùng chung & Trạng thái người dùng nhất quán):
+2026-11-10T21:55:51.839+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (secured) - Tong so san pham: 5
+2026-11-10T21:55:51.858+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='iPhone' -> Tim thay 1 san pham
+2026-11-10T21:55:51.877+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='1' (name='iPhone 15 Pro Max') - So binh luan hien co: 2
+
+# Log thực thi CORE-07.6 (Luồng thương mại điện tử đầy đủ End-to-End 9 bước):
+2026-11-10T21:55:52.061+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (secured) - Tong so san pham: 5
+2026-11-10T21:55:52.076+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][SEARCH][FOUND] Tu khoa='Laptop' -> Tim thay 1 san pham
+2026-11-10T21:55:52.090+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='3' (name='Laptop Dell XPS 15') - So binh luan hien co: 0
+2026-11-10T21:55:52.107+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][INVALID_CREDENTIALS] Dang nhap sai thong tin (secured) cho username='nguyenvana'
+2026-11-10T21:55:52.124+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (secured) cho user='nguyenvana' (role='customer')
+2026-11-10T21:55:52.127+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='3', author='nguyenvana'
+2026-11-10T21:55:52.127+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='3' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T21:55:52.129+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][REQUEST] Nhan yeu cau gui binh luan (secured): product_id='3', author='nguyenvana'
+2026-11-10T21:55:52.130+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (secured): product_id='3', author='nguyenvana', rowsAffected=1
+2026-11-10T21:55:52.134+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][FOUND] Xem chi tiet san pham (secured) id='3' (name='Laptop Dell XPS 15') - So binh luan hien co: 1
+2026-11-10T21:55:52.148+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai (secured): id='999'
+2026-11-10T21:55:52.164+07:00  INFO 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-04][HOME] Hien thi trang chu (secured) - Tong so san pham: 5
+
+# Log thực thi CORE-07.3 & CORE-07.4 (Thông báo lỗi & Che giấu chi tiết SQL trên bản Secured):
+2026-11-10T21:55:52.195+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][VALIDATION_FAILED] Dang nhap that bai (secured) - Thieu username hoac password
+2026-11-10T21:55:52.209+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][AUTH][INVALID_CREDENTIALS] Dang nhap sai thong tin (secured) cho username='nguyenvana'
+2026-11-10T21:55:52.221+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai (secured): id='999'
+2026-11-10T21:55:52.238+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][READ][NOT_FOUND] San pham khong ton tai hoac ID khong hop le (secured): id='abc'
+2026-11-10T21:55:52.251+07:00  WARN 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='1' - Noi dung rong hoac chi chua khoang trang
+2026-11-10T21:55:52.254+07:00 ERROR 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-06][WRITE][DB_ERROR] Luu binh luan that bai cho product_id='999' - Loi DB: Referential integrity constraint violation
+2026-11-10T21:55:52.268+07:00 ERROR 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][SECURED][DB_ERROR] Loi truy van danh sach san pham trang chu: Table "products" not found (this database is empty); SQL statement: SELECT * FROM products [42104-224]
+2026-11-10T21:55:52.283+07:00 ERROR 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][SECURED][DB_ERROR] Tu khoa='iPhone' -> Loi truy van tim kiem: Table "products" not found (this database is empty); SQL statement: SELECT id, name, description, price FROM products WHERE name LIKE ? [42104-224]
+2026-11-10T21:55:52.296+07:00 ERROR 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][SECURED][DB_ERROR] Loi truy van chi tiet san pham id='1': Table "products" not found (this database is empty); SQL statement: SELECT * FROM products WHERE id = ? [42104-224]
+2026-11-10T21:55:52.312+07:00 ERROR 19216 --- [websec-app-secured] [           main] c.uth.websec.controller.AppController    : [CORE-07][SECURED][DB_ERROR] Loi he thong khi xac thuc dang nhap cho user='nguyenvana': Table "users" not found (this database is empty); SQL statement: SELECT * FROM users WHERE username = ? AND password = ? [42104-224]
+  --> Giao diện HTML phản hồi cho người dùng trên app-secured chỉ hiển thị:
+      "Đã xảy ra lỗi trong quá trình xử lý yêu cầu hoặc dịch vụ tạm thời chưa sẵn sàng. Vui lòng thử lại sau."
+      (Tuyệt đối không lộ câu lệnh SQL, tên bảng hay mã lỗi JDBC ra trình duyệt)
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.968 s -- in com.uth.websec.Core07NavbarLayoutAndErrorTest
+[INFO] Running com.uth.websec.ModelMappingTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.uth.websec.ModelMappingTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------

@@ -1,0 +1,73 @@
+================================================================================
+NHẬT KÝ KIỂM CHỨNG POC VÔ HẠI - TASK XSS-01 (ANM-38)
+Nghiên cứu Reflected và Stored XSS theo OWASP 2025
+Thực hiện: TV2 - Hồng Sơn
+Môi trường: H2 In-Memory (MODE=MySQL) nạp dữ liệu giả từ lab-environment/db/init.sql
+Phiên bản mã nguồn cơ sở: nhánh HongSon/CORE-07, commit 00fd329
+Bộ kiểm thử: lab-environment/<app>/src/test/java/com/uth/websec/Xss01SafePocTest.java
+Ghi chú: MockMvc KHÔNG thực thi JavaScript. Bộ test kiểm chứng nội dung HTML phản hồi
+         (payload nguyên văn hay đã mã hóa), dữ liệu lưu trong CSDL, header CSP và cờ
+         HttpOnly. Việc script có thực thi trên trình duyệt hay không được kiểm tra thủ
+         công theo mục 6.5 của tài liệu nghiên cứu.
+================================================================================
+
+Payload sử dụng (không đọc cookie, không gửi dữ liệu ra ngoài):
+  R1 = <script>console.log("XSS-01 R1 reflected")</script>
+  R3 = <img src=x onerror="console.log(document.title)">
+  S1 = <script>console.log("XSS-01 S1 stored")</script>
+  S2 = <mark>XSS-01 S2 stored HTML</mark>
+
+--------------------------------------------------------------------------------
+PHẦN 1: APP-VULNERABLE (PORT 8080)
+Lệnh: mvn -Dtest=Xss01SafePocTest test   (tại lab-environment/app-vulnerable)
+--------------------------------------------------------------------------------
+[INFO] Building websec-app-vulnerable 1.0.0
+2026-11-10T22:36:50.392+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<script>console.log("XSS-01 R1 reflected")</script>' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:50.716+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<script>console.log("XSS-01 R1 reflected")</script>' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:50.745+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][FOUND] Tu khoa='iPhone' -> Tim thay 1 san pham
+2026-11-10T22:36:50.789+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<script>console.log("XSS-01 R1 reflected")</script>' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:50.806+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<img src=x onerror="console.log(document.title)">' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:50.848+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (vulnerable) cho user='nguyenvana' (role='customer')
+2026-11-10T22:36:50.876+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (vulnerable): product_id='1', author='lab_tester', rowsAffected=1
+2026-11-10T22:36:50.881+07:00  INFO 21460 --- [websec-app-vulnerable] [main] c.uth.websec.controller.AppController : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (vulnerable): product_id='1', author='lab_tester', rowsAffected=1
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.179 s -- in com.uth.websec.Xss01SafePocTest
+[INFO] BUILD SUCCESS
+
+Kết quả từng ca (app-vulnerable):
+  [PASS] XSS-01.1  Reflected: R1 và R3 xuất hiện NGUYÊN VĂN trong HTML phản hồi /search (sink th:utext)
+  [PASS] XSS-01.2  Reflected: payload không được ghi vào bảng comments, không xuất hiện ở request /search?keyword=iPhone tiếp theo
+  [PASS] XSS-01.3  Stored: S1, S2 được lưu nguyên văn vào comments; 2 lần tải /product?id=1 độc lập đều nhận payload thô
+  [PASS] XSS-01.4  Không có header Content-Security-Policy
+  [PASS] XSS-01.5  Set-Cookie: session_token=... KHÔNG có cờ HttpOnly
+
+--------------------------------------------------------------------------------
+PHẦN 2: APP-SECURED (PORT 8081)
+Lệnh: mvn -Dtest=Xss01SafePocTest test   (tại lab-environment/app-secured)
+--------------------------------------------------------------------------------
+[INFO] Building websec-app-secured 1.0.0
+2026-11-10T22:36:57.043+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<script>console.log("XSS-01 R1 reflected")</script>' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:57.318+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][FOUND] Tu khoa='iPhone' -> Tim thay 1 san pham
+2026-11-10T22:36:57.375+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<script>console.log("XSS-01 R1 reflected")</script>' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:57.424+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (secured): product_id='1', author='lab_tester', rowsAffected=1
+2026-11-10T22:36:57.430+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-06][WRITE][SAVED] Luu binh luan thanh cong vao DB (secured): product_id='1', author='lab_tester', rowsAffected=1
+2026-11-10T22:36:57.480+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<script>console.log("XSS-01 R1 reflected")</script>' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:57.492+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-04][SEARCH][NOT_FOUND] Tu khoa='<img src=x onerror="console.log(document.title)">' -> Khong tim thay san pham nao (0 ket qua)
+2026-11-10T22:36:57.533+07:00  INFO 1512 --- [websec-app-secured] [main] c.uth.websec.controller.AppController : [CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (secured) cho user='nguyenvana' (role='customer')
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.948 s -- in com.uth.websec.Xss01SafePocTest
+[INFO] BUILD SUCCESS
+
+Kết quả từng ca (app-secured):
+  [PASS] XSS-01.1  Reflected: HTML phản hồi chứa &lt;script&gt;console.log(&quot;XSS-01 R1 reflected&quot;)&lt;/script&gt;
+                   và &lt;img src=x onerror=&quot;console.log(document.title)&quot;&gt;; KHÔNG còn thẻ thô
+  [PASS] XSS-01.2  Reflected: payload không được ghi vào bảng comments, không xuất hiện ở request tiếp theo
+  [PASS] XSS-01.3  Stored: S1, S2 VẪN được lưu nguyên văn trong CSDL (chưa có sanitize đầu vào),
+                   nhưng 2 lần tải /product?id=1 đều nhận bản đã mã hóa (&lt;script&gt;..., &lt;mark&gt;...)
+  [PASS] XSS-01.4  Header: Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline';
+                   và X-Content-Type-Options: nosniff (trên /search và /product)
+  [PASS] XSS-01.5  Set-Cookie: session_token=...; HttpOnly; SameSite=Strict
+
+--------------------------------------------------------------------------------
+PHẦN 3: HỒI QUY TOÀN BỘ (mvn test)
+--------------------------------------------------------------------------------
+[app-vulnerable] Core04: 5, Core05: 5, Core06: 6, Core07: 6, ModelMapping: 3, Xss01SafePoc: 5 -> Tests run: 30, Failures: 0, Errors: 0
+[app-secured]    Core04: 5, Core05: 5, Core06: 6, Core07: 6, ModelMapping: 3, Xss01SafePoc: 5 -> Tests run: 30, Failures: 0, Errors: 0

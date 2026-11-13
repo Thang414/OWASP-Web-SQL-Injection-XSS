@@ -1,5 +1,7 @@
 -- Khởi tạo cơ sở dữ liệu mẫu cho ứng dụng Thương mại điện tử
-CREATE DATABASE IF NOT EXISTS ecommerce_db;
+SET NAMES utf8mb4;
+
+CREATE DATABASE IF NOT EXISTS ecommerce_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ecommerce_db;
 
 -- Đảm bảo xóa bảng theo đúng thứ tự ràng buộc khóa ngoại để phục vụ quy trình reset dữ liệu
@@ -17,7 +19,7 @@ CREATE TABLE users (
     full_name VARCHAR(100),
     role VARCHAR(20) DEFAULT 'customer',
     credit_card VARCHAR(30)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Thêm dữ liệu tài khoản mẫu
 INSERT INTO users (username, password, full_name, role, credit_card) VALUES
@@ -33,7 +35,7 @@ CREATE TABLE products (
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
     category VARCHAR(50)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO products (name, description, price, category) VALUES
 ('iPhone 15 Pro Max', 'Điện thoại thông minh Apple 256GB Titan tự nhiên', 29990000.00, 'Điện thoại'),
@@ -50,7 +52,7 @@ CREATE TABLE comments (
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO comments (product_id, author, content) VALUES
 (1, 'Nguyễn Văn A', 'Sản phẩm dùng rất mượt, camera chụp đêm rất đỉnh!'),

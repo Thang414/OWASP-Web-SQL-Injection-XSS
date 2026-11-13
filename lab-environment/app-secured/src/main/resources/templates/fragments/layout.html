@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style th:fragment="sharedStyles">
+        header.main-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.96);
+            backdrop-filter: blur(12px);
+            color: #ffffff;
+            padding: 12px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(5, 150, 105, 0.35);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+        }
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .brand-text h2 {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .env-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 9999px;
+            background: rgba(16, 185, 129, 0.22);
+            color: #6ee7b7;
+            border: 1px solid rgba(52, 211, 153, 0.45);
+            letter-spacing: 0.3px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: all 0.18s ease;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+        .nav-link.active {
+            background: rgba(16, 185, 129, 0.22);
+            color: #6ee7b7;
+            border: 1px solid rgba(52, 211, 153, 0.35);
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13.5px;
+        }
+        .guest-status {
+            color: #94a3b8;
+            font-size: 12.5px;
+            font-weight: 500;
+        }
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 14px;
+            border-radius: 9999px;
+        }
+        .avatar-circle {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-auth {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+        }
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
+        }
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.1);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .btn-logout:hover {
+            background: rgba(5, 150, 105, 0.25);
+            color: #ffffff;
+        }
+        .banner-secured {
+            background: #ecfdf5;
+            color: #065f46;
+            padding: 11px 28px;
+            font-weight: 600;
+            font-size: 13.5px;
+            border-bottom: 1px solid #d1fae5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .global-service-error {
+            background: #fef2f2;
+            border: 1.5px solid #fecaca;
+            color: #991b1b;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 22px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+        }
+        footer.site-footer {
+            margin-top: 50px;
+            border-top: 1px solid #e2e8f0;
+            padding: 24px 16px;
+            text-align: center;
+            color: #64748b;
+            font-size: 13px;
+        }
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .footer-nav a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.15s;
+        }
+        .footer-nav a:hover {
+            color: #059669;
+        }
+    </style>
+</head>
+<body>
+
+<header th:fragment="navbar(activePage)" class="main-navbar">
+    <a class="header-brand" href="/">
+        <div class="brand-logo">🛡️</div>
+        <div class="brand-text">
+            <h2>
+                <span>UTH E-Shop</span>
+                <span class="env-badge">🛡️ SECURED APP :8081</span>
+            </h2>
+        </div>
+    </a>
+
+    <nav class="nav-links" aria-label="Điều hướng chính">
+        <a href="/" class="nav-link" th:classappend="${activePage == 'home' ? 'active' : ''}">🏠 Trang chủ</a>
+        <a href="/search" class="nav-link" th:classappend="${activePage == 'search' ? 'active' : ''}">🔍 Tìm kiếm</a>
+        <a href="/product?id=1" class="nav-link" th:classappend="${activePage == 'product' ? 'active' : ''}">📱 Chi tiết &amp; Bình luận</a>
+    </nav>
+
+    <div class="user-info">
+        <span th:if="${user != null}" class="user-pill">
+            <span class="avatar-circle" th:text="${#strings.substring(user.username, 0, 1).toUpperCase()}">U</span>
+            <span>Xin chào, <strong th:text="${(user.fullName != null and !user.fullName.isEmpty() ? user.fullName + ' (' + user.username + ')' : user.username) + ' (Quyền: ' + user.role + ')'}"></strong></span>
+        </span>
+        <a th:if="${user != null}" href="/logout" class="btn-auth btn-logout">Đăng xuất</a>
+        <span th:if="${user == null}" class="guest-status">Khách vãng lai</span>
+        <a th:if="${user == null}" href="/login" class="btn-auth btn-login">Đăng nhập</a>
+    </div>
+</header>
+
+<div th:fragment="labBanner" class="banner-secured">
+    <span>✅ PHIÊN BẢN AN TOÀN: Đã kích hoạt cơ chế phòng thủ Prepared Statements, Thymeleaf Auto-Escaping (th:text), HttpOnly Cookie &amp; Content-Security-Policy (CSP).</span>
+</div>
+
+<div th:fragment="systemAlerts" th:if="${error != null}" class="global-service-error" role="alert">
+    <span>🚨</span>
+    <div>
+        <strong>Thông báo dịch vụ:</strong>
+        <span th:text="${error}"></span>
+    </div>
+</div>
+
+<footer th:fragment="footer" class="site-footer">
+    <div class="footer-nav">
+        <a href="/">Trang chủ</a>
+        <span>•</span>
+        <a href="/search">Tìm kiếm sản phẩm</a>
+        <span>•</span>
+        <a href="/product?id=1">Chi tiết &amp; Đánh giá</a>
+        <span>•</span>
+        <a th:if="${user == null}" href="/login">Đăng nhập</a>
+        <a th:if="${user != null}" href="/logout">Đăng xuất</a>
+    </div>
+    <p>Học phần An ninh mạng - Đại học Giao thông Vận tải TP.HCM (UTH) | Phiên bản Đã Vá Bảo Mật (Secured App :8081)</p>
+</footer>
+
+</body>
+</html>

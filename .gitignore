@@ -29,3 +29,11 @@ mysql_data/
 # Temporary demo captures
 demo-artifacts/temp/
 *.pcap
+
+
+# Local TLS test certificates & keystores (ANM-27 / ANM-45)
+certs/
+*.p12
+*.jks
+*.key
+*.pem

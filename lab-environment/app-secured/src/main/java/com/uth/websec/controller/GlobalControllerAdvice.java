@@ -58,6 +58,8 @@ public class GlobalControllerAdvice {
             int status = error.getStatusCode().value();
             error.getHeaders().forEach((name, values) -> values.forEach(value -> response.addHeader(name, value)));
             response.setStatus(status);
+            User user = appController.resolveSessionUser(session);
+            model.addAttribute("user", user);
             model.addAttribute("status", status);
             model.addAttribute("errorTitle", "Yêu cầu không hợp lệ (" + status + ")");
             model.addAttribute("errorMessage", "Vui lòng kiểm tra lại yêu cầu.");

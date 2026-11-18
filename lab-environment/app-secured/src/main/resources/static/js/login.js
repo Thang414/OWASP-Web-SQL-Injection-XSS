@@ -2,6 +2,8 @@ const loginForm = document.getElementById('login-form');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const togglePassBtn = document.getElementById('toggle-pass-btn');
+const eyeOpenIcon = document.getElementById('eye-open-icon');
+const eyeClosedIcon = document.getElementById('eye-closed-icon');
 const paramUserVal = document.getElementById('param-user-val');
 const paramPassVal = document.getElementById('param-pass-val');
 const sqlPreparedTemplate = document.getElementById('sql-prepared-template');
@@ -21,8 +23,14 @@ function updatePreparedParamsPreview() {
 
 function setPasswordVisible(visible) {
     passwordInput.type = visible ? 'text' : 'password';
+    if (eyeOpenIcon && eyeClosedIcon) {
+        eyeOpenIcon.hidden = visible;
+        eyeClosedIcon.hidden = !visible;
+    }
     if (togglePassBtn) {
-        togglePassBtn.textContent = visible ? '🙈 Ẩn' : '👁️ Hiện';
+        const label = visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu';
+        togglePassBtn.setAttribute('aria-label', label);
+        togglePassBtn.title = label;
     }
 }
 

@@ -89,6 +89,72 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
         }
+        .password-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-wrap input {
+            padding-right: 78px;
+        }
+        .btn-toggle-pass {
+            position: absolute;
+            right: 8px;
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            padding: 5px 9px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-toggle-pass:hover {
+            background: #e2e8f0;
+        }
+        .sql-live-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1.5px solid #dc2626;
+            border-radius: 12px;
+            padding: 13px 15px;
+            margin-top: 16px;
+            font-size: 12.5px;
+        }
+        .sql-live-title {
+            color: #fca5a5;
+            font-weight: 700;
+            margin-bottom: 7px;
+            font-size: 12px;
+            letter-spacing: 0.2px;
+        }
+        .sql-live-code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            line-height: 1.65;
+            word-break: break-all;
+            color: #4ade80;
+            background: #1e293b;
+            padding: 9px 11px;
+            border-radius: 8px;
+        }
+        .sql-commented {
+            color: #94a3b8;
+            text-decoration: line-through;
+            opacity: 0.75;
+        }
+        .sql-injected-part {
+            color: #fbbf24;
+            font-weight: 700;
+        }
+        .sql-live-status {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+        .sql-live-status.danger {
+            color: #fde047;
+            font-weight: 700;
+        }
         button.btn-submit {
             width: 100%;
             padding: 13px;
@@ -288,10 +354,19 @@
         </div>
         <div class="form-group">
             <label for="password">Mật khẩu:</label>
-            <input id="password" type="password" name="password" placeholder="Nhập mật khẩu...">
+            <div class="password-wrap">
+                <input id="password" type="password" name="password" placeholder="Nhập mật khẩu...">
+                <button type="button" id="toggle-pass-btn" class="btn-toggle-pass" onclick="togglePassword()">👁️ Hiện</button>
+            </div>
         </div>
         <button class="btn-submit" type="submit">Đăng nhập</button>
     </form>
+
+    <div class="sql-live-box" aria-live="polite">
+        <div class="sql-live-title">🔍 Xem trước câu lệnh SQL sẽ thực thi (Nối chuỗi trực tiếp — Vulnerable 8080)</div>
+        <div id="sql-live-code" class="sql-live-code"></div>
+        <div id="sql-live-status" class="sql-live-status"></div>
+    </div>
 
     <section class="hint-box" aria-labelledby="sqli-result-title">
         <h3 id="sqli-result-title">🧪 Ca kiểm thử SQL Injection (Lab cục bộ 8080)</h3>
@@ -357,14 +432,76 @@
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
 <script>
+    const userEl = document.getElementById('username');
+    const passEl = document.getElementById('password');
+    const sqlCodeEl = document.getElementById('sql-live-code');
+    const sqlStatusEl = document.getElementById('sql-live-status');
+    const toggleBtn = document.getElementById('toggle-pass-btn');
+
+    function togglePassword() {
+        const isPass = passEl.type === 'password';
+        passEl.type = isPass ? 'text' : 'password';
+        toggleBtn.textContent = isPass ? '🙈 Ẩn' : '👁️ Hiện';
+    }
+
+    function updateLiveSqlPreview() {
+        const u = userEl.value;
+        const p = passEl.value;
+        const fullSql = "SELECT * FROM users WHERE username = '" + u + "' AND password = '" + p + "'";
+        sqlCodeEl.textContent = '';
+
+        // Phát hiện vị trí chú thích SQL (--  hoặc #) sau khi nối chuỗi
+        const dashCommentIdx = fullSql.indexOf('-- ');
+        const hashCommentIdx = fullSql.indexOf('#');
+        let commentIdx = -1;
+        if (dashCommentIdx !== -1 && hashCommentIdx !== -1) {
+            commentIdx = Math.min(dashCommentIdx, hashCommentIdx);
+        } else {
+            commentIdx = Math.max(dashCommentIdx, hashCommentIdx);
+        }
+
+        if (commentIdx !== -1) {
+            const activeSpan = document.createElement('span');
+            activeSpan.textContent = fullSql.slice(0, commentIdx);
+            const commentedSpan = document.createElement('span');
+            commentedSpan.className = 'sql-commented';
+            commentedSpan.textContent = fullSql.slice(commentIdx);
+            sqlCodeEl.appendChild(activeSpan);
+            sqlCodeEl.appendChild(commentedSpan);
+
+            sqlStatusEl.className = 'sql-live-status danger';
+            sqlStatusEl.textContent = '⚠️ Phần gạch ngang phía sau đã bị biến thành chú thích SQL — kiểm tra mật khẩu bị bỏ qua hoàn toàn!';
+        } else if (/'\s*or\s+/i.test(u) || /'\s*or\s+/i.test(p)) {
+            const span = document.createElement('span');
+            span.className = 'sql-injected-part';
+            span.textContent = fullSql;
+            sqlCodeEl.appendChild(span);
+
+            sqlStatusEl.className = 'sql-live-status danger';
+            sqlStatusEl.textContent = '⚠️ Phát hiện mệnh đề OR làm thay đổi logic điều kiện WHERE của câu truy vấn!';
+        } else {
+            sqlCodeEl.textContent = fullSql;
+            sqlStatusEl.className = 'sql-live-status';
+            sqlStatusEl.textContent = 'ℹ️ Truy vấn bình thường: hệ thống đang kiểm tra cả username và password.';
+        }
+    }
+
     function quickFill(user, pass) {
-        document.getElementById('username').value = user;
-        document.getElementById('password').value = pass;
+        userEl.value = user;
+        passEl.value = pass;
+        if (passEl.type === 'password' && user.includes("'")) {
+            togglePassword();
+        }
+        updateLiveSqlPreview();
     }
     function runSqliDemo(user, pass) {
         quickFill(user, pass);
         document.getElementById('login-form').submit();
     }
+
+    userEl.addEventListener('input', updateLiveSqlPreview);
+    passEl.addEventListener('input', updateLiveSqlPreview);
+    updateLiveSqlPreview();
 </script>
 
 </body>

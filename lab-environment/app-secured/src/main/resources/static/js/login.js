@@ -24,7 +24,9 @@ function updatePreparedParamsPreview() {
 function setPasswordVisible(visible) {
     passwordInput.type = visible ? 'text' : 'password';
     if (eyeOpenIcon && eyeClosedIcon) {
+        eyeOpenIcon.classList.toggle('is-hidden', visible);
         eyeOpenIcon.hidden = visible;
+        eyeClosedIcon.classList.toggle('is-hidden', !visible);
         eyeClosedIcon.hidden = !visible;
     }
     if (togglePassBtn) {

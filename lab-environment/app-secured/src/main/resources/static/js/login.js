@@ -36,6 +36,16 @@ function setPasswordVisible(visible) {
     }
 }
 
+function updatePasswordToggleVisibility() {
+    const hasValue = passwordInput && passwordInput.value.length > 0;
+    if (togglePassBtn) {
+        togglePassBtn.classList.toggle('is-hidden', !hasValue);
+    }
+    if (!hasValue && passwordInput && passwordInput.type !== 'password') {
+        setPasswordVisible(false);
+    }
+}
+
 if (togglePassBtn) {
     togglePassBtn.addEventListener('click', () => {
         setPasswordVisible(passwordInput.type === 'password');
@@ -46,6 +56,7 @@ document.querySelectorAll('.btn-fill').forEach((button) => {
     button.addEventListener('click', () => {
         usernameInput.value = button.dataset.username;
         passwordInput.value = button.dataset.password;
+        updatePasswordToggleVisibility();
         if (button.dataset.username && button.dataset.username.includes("'")) {
             setPasswordVisible(true);
         }
@@ -58,6 +69,10 @@ document.querySelectorAll('.btn-fill').forEach((button) => {
 
 if (usernameInput && passwordInput) {
     usernameInput.addEventListener('input', updatePreparedParamsPreview);
-    passwordInput.addEventListener('input', updatePreparedParamsPreview);
+    passwordInput.addEventListener('input', () => {
+        updatePasswordToggleVisibility();
+        updatePreparedParamsPreview();
+    });
+    updatePasswordToggleVisibility();
     updatePreparedParamsPreview();
 }

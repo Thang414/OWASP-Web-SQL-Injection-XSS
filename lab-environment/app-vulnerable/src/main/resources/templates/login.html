@@ -110,7 +110,7 @@
             align-items: center;
             justify-content: center;
             background: transparent;
-            color: #64748b;
+            color: #757575;
             border: none;
             border-radius: 50%;
             padding: 0;
@@ -119,8 +119,9 @@
         }
         .btn-toggle-pass:hover {
             background: rgba(15, 23, 42, 0.06);
-            color: #0f172a;
+            color: #334155;
         }
+        .btn-toggle-pass.is-hidden,
         .btn-toggle-pass svg.is-hidden,
         .btn-toggle-pass svg[hidden] {
             display: none !important;
@@ -369,7 +370,7 @@
             <label for="password">Mật khẩu:</label>
             <div class="password-wrap">
                 <input id="password" type="password" name="password" placeholder="Nhập mật khẩu...">
-                <button type="button" id="toggle-pass-btn" class="btn-toggle-pass" onclick="togglePassword()" aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                <button type="button" id="toggle-pass-btn" class="btn-toggle-pass is-hidden" onclick="togglePassword()" aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
                     <svg id="eye-open-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
                         <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                     </svg>
@@ -475,6 +476,16 @@
         }
     }
 
+    function updatePasswordToggleVisibility() {
+        const hasValue = passEl.value.length > 0;
+        if (toggleBtn) {
+            toggleBtn.classList.toggle('is-hidden', !hasValue);
+        }
+        if (!hasValue && passEl.type !== 'password') {
+            setPasswordVisible(false);
+        }
+    }
+
     function togglePassword() {
         setPasswordVisible(passEl.type === 'password');
     }
@@ -524,8 +535,9 @@
     function quickFill(user, pass) {
         userEl.value = user;
         passEl.value = pass;
-        if (passEl.type === 'password' && user.includes("'")) {
-            togglePassword();
+        updatePasswordToggleVisibility();
+        if (user.includes("'")) {
+            setPasswordVisible(true);
         }
         updateLiveSqlPreview();
     }
@@ -535,7 +547,11 @@
     }
 
     userEl.addEventListener('input', updateLiveSqlPreview);
-    passEl.addEventListener('input', updateLiveSqlPreview);
+    passEl.addEventListener('input', () => {
+        updatePasswordToggleVisibility();
+        updateLiveSqlPreview();
+    });
+    updatePasswordToggleVisibility();
     updateLiveSqlPreview();
 </script>
 

@@ -89,8 +89,10 @@ def run_lab_demonstration():
     print(f"\n  [+] Bước 3.2: Tìm kiếm với payload UNION: keyword=\"{union_payload[:35]}...\"")
     v_atk_srch = requests.get(f"{VULN_URL}/search", params={"keyword": union_payload})
     s_atk_srch = requests.get(f"{SECURED_URL}/search", params={"keyword": union_payload})
-    print(f"      - Vulnerable (8080): Trích xuất thẻ sản phẩm giả: {'DEMO_PWNED_SQLI' in v_atk_srch.text}")
-    print(f"      - Secured    (8081): Chặn an toàn, 0 thẻ sản phẩm giả: {'DEMO_PWNED_SQLI' not in s_atk_srch.text}")
+    v_union_ok = "<h4>DEMO_PWNED_SQLI</h4>" in v_atk_srch.text
+    s_union_blocked = "<h4>DEMO_PWNED_SQLI</h4>" not in s_atk_srch.text and "Không tìm thấy sản phẩm" in s_atk_srch.text
+    print(f"      - Vulnerable (8080): Trích xuất thẻ sản phẩm giả: {v_union_ok}")
+    print(f"      - Secured    (8081): Chặn an toàn, 0 thẻ sản phẩm giả: {s_union_blocked}")
     print("      - Giải thích mã vá: PreparedStatement pstmt.setString(1, \"%\" + keyword + \"%\").")
 
     # -------------------------------------------------------------------------

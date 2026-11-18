@@ -148,8 +148,9 @@ def run_sqli_comparative_suite():
     det_payload = "-1 UNION SELECT 999, 'SQLI07_DETAIL_MARKER', 'Thong tin gia mao', '77777777', 'dien thoai' -- "
     v_atk_det = requests.get(f"{VULN_URL}/product", params={"id": det_payload})
     s_atk_det = requests.get(f"{SECURED_URL}/product", params={"id": det_payload})
-    v_det_injected = "SQLI07_DETAIL_MARKER" in v_atk_det.text
-    s_det_safe = "SQLI07_DETAIL_MARKER" not in s_atk_det.text
+    v_det_injected = "<h2>SQLI07_DETAIL_MARKER</h2>" in v_atk_det.text
+    s_det_safe = ("<h2>SQLI07_DETAIL_MARKER</h2>" not in s_atk_det.text and
+                  "Sản phẩm không tồn tại hoặc đã bị xóa!" in s_atk_det.text)
     results.append({
         "id": "SQLI07-ATK-03",
         "type": "Tấn công SQLi",
@@ -161,24 +162,26 @@ def run_sqli_comparative_suite():
         "note": "Bản vá: Integer.parseInt ép kiểu nghiêm ngặt và PreparedStatement WHERE id = ?"
     })
 
-    # 2.4 SQLi Comment Insert Injection
-    cmt_payload = "Attacker', 'SQLI07_SPLIT_CONTENT'); -- "
-    requests.post(f"{VULN_URL}/product", data={"product_id": "1", "author": cmt_payload, "content": "OriginalText"})
-    requests.post(f"{SECURED_URL}/product", data={"product_id": "2", "author": cmt_payload, "content": "OriginalSafeText"})
+    # 2.4 SQLi Comment Insert Injection (tiêm đa dòng qua product_id trên bản vulnerable)
+    cmt_payload = "1, 'SQLI07_INJECTED_AUTHOR', 'SQLI07_SPLIT_CONTENT'), (1"
+    requests.post(f"{VULN_URL}/product", data={"product_id": cmt_payload, "author": "Tester", "content": "OriginalText"})
+    s_cmt_atk = requests.post(f"{SECURED_URL}/product", data={"product_id": cmt_payload, "author": "Tester", "content": "OriginalSafeText"}, allow_redirects=True)
+    requests.post(f"{SECURED_URL}/product", data={"product_id": "2", "author": "O'Brien", "content": "OriginalSafeText"})
     v_chk_cmt = requests.get(f"{VULN_URL}/product?id=1")
     s_chk_cmt = requests.get(f"{SECURED_URL}/product?id=2")
     v_split_injected = '<div class="comment-body">SQLI07_SPLIT_CONTENT</div>' in v_chk_cmt.text
-    s_split_safe = ('<div class="comment-body">OriginalSafeText</div>' in s_chk_cmt.text and
+    s_split_safe = ("Mã sản phẩm không hợp lệ!" in s_cmt_atk.text and
+                    '<div class="comment-body">OriginalSafeText</div>' in s_chk_cmt.text and
                     '<div class="comment-body">SQLI07_SPLIT_CONTENT</div>' not in s_chk_cmt.text)
     results.append({
         "id": "SQLI07-ATK-04",
         "type": "Tấn công SQLi",
         "endpoint": "POST /product",
-        "payload": f"author=\"{cmt_payload}\"",
-        "vuln_status": "BỊ TÁCH CỘT (Chuỗi chèn trở thành cột content)",
-        "sec_status": "CHẶN ĐỨNG (Lưu trọn vẹn tham số author)",
+        "payload": f"product_id=\"{cmt_payload}\"",
+        "vuln_status": "BỊ CHÈN BẢN GHI (Tiêm đa dòng qua product_id)",
+        "sec_status": "CHẶN ĐỨNG (Ép kiểu product_id > 0 + PreparedStatement)",
         "pass": v_split_injected and s_split_safe,
-        "note": "Bản vá: INSERT INTO comments (product_id, author, content) VALUES (?, ?, ?)"
+        "note": "Bản vá: Integer.parseInt(productId) + INSERT INTO comments (product_id, author, content) VALUES (?, ?, ?)"
     })
 
     reset_db()

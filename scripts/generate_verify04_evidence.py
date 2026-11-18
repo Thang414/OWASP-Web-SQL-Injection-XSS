@@ -84,22 +84,22 @@ EVIDENCE_CASES = [
     {
         "case_id": "EV-SQLI-04",
         "category": "SQL Injection",
-        "title": "Tách cột và tiêm nội dung trong câu lệnh INSERT bình luận",
+        "title": "Tiêm đa dòng qua tham số product_id trong câu lệnh INSERT bình luận",
         "endpoint": "POST /product",
-        "payload": "author=\"Tester', 'Injected Content'); -- \", content=\"Safe\"",
+        "payload": "product_id=\"1, 'SQLI_INJECTED_AUTHOR', 'Injected Content By SQLi'), (1\", author=\"Tester\", content=\"Safe\"",
         "vulnerable_code": {
             "file": "lab-environment/app-vulnerable/.../AppController.java",
-            "lines": "342-345",
+            "lines": "342-347",
             "snippet": "String sql = \"INSERT INTO comments (product_id, author, content) VALUES (\" + productId + \", ?, ?)\";"
         },
         "remediation_code": {
             "file": "lab-environment/app-secured/.../AppController.java",
-            "lines": "268-275",
-            "snippet": "String sql = \"INSERT INTO comments (product_id, author, content) VALUES (?, ?, ?)\";"
+            "lines": "276-332",
+            "snippet": "productId = Integer.parseInt(productIdStr.trim()); PreparedStatement pstmt = conn.prepareStatement(\"INSERT INTO comments (product_id, author, content) VALUES (?, ?, ?)\");"
         },
         "screenshot": "docs/tasks/screenshots/04_vulnerable_product_comments_8080.png vs 08_secured_product_comments_8081.png",
-        "vuln_behavior": "Ký tự nháy đơn ngắt câu lệnh làm cột content bị chèn nội dung tấn công",
-        "sec_behavior": "Cô lập toàn bộ tham số, lưu giữ trọn vẹn giá trị chuỗi an toàn"
+        "vuln_behavior": "Nối chuỗi product_id cho phép tiêm đa dòng chèn bản ghi bình luận ngoài ý muốn",
+        "sec_behavior": "Ép kiểu số nguyên dương và cô lập toàn bộ tham số qua PreparedStatement (?, ?, ?)"
     },
     {
         "case_id": "EV-XSS-01",
@@ -144,22 +144,22 @@ EVIDENCE_CASES = [
     {
         "case_id": "EV-SESS-01",
         "category": "Quản lý phiên",
-        "title": "Thiếu cờ bảo vệ HttpOnly và SameSite trên cookie phiên",
+        "title": "Thiếu cờ bảo vệ HttpOnly, SameSite và chống Session Fixation trên cookie phiên",
         "endpoint": "POST /login (Set-Cookie)",
-        "payload": "Đăng nhập hợp lệ tạo session_token",
+        "payload": "Đăng nhập hợp lệ tạo cookie phiên (session_token vs SECUREDSESSION)",
         "vulnerable_code": {
             "file": "lab-environment/app-vulnerable/.../AppController.java",
-            "lines": "attachVulnerableSessionCookie",
+            "lines": "102-111",
             "snippet": "Cookie cookie = new Cookie(\"session_token\", token); cookie.setHttpOnly(false);"
         },
         "remediation_code": {
-            "file": "lab-environment/app-secured/.../AppController.java",
-            "lines": "attachSecuredSessionCookie",
-            "snippet": "ResponseCookie.from(\"session_token\", token).httpOnly(true).sameSite(\"Strict\").build();"
+            "file": "lab-environment/app-secured/src/main/resources/application.properties & AppController.java",
+            "lines": "application.properties:27-31, AppController.java:398",
+            "snippet": "server.servlet.session.cookie.name=SECUREDSESSION; http-only=true; same-site=strict; secure=${SESSION_COOKIE_SECURE:false}; request.changeSessionId();"
         },
         "screenshot": "docs/tasks/screenshots/02_vulnerable_login_8080.png vs 06_secured_login_8081.png",
-        "vuln_behavior": "Cookie thiếu HttpOnly, JavaScript dễ dàng đọc qua document.cookie",
-        "sec_behavior": "Trình duyệt chặn hoàn toàn quyền đọc cookie của mọi script"
+        "vuln_behavior": "Cookie session_token thiếu HttpOnly, JavaScript dễ dàng đọc qua document.cookie",
+        "sec_behavior": "Cookie SECUREDSESSION có HttpOnly, SameSite=Strict, hỗ trợ Secure qua TLS và đổi session ID khi đăng nhập"
     },
     {
         "case_id": "EV-HDRS-01",

@@ -45,13 +45,15 @@ def run_cookie_security_tests():
 
     results = []
 
-    # 1. Kiểm tra thuộc tính cookie khi đăng nhập
+    # 1. Kiểm tra thuộc tính cookie khi đăng nhập và chống Session Fixation
     print("\n[+] 1. Đăng nhập và thu thập Set-Cookie:")
     v_s = requests.Session()
     v_login = v_s.post(f"{VULN_URL}/login", data={"username": "admin", "password": "admin123_super_secret"}, allow_redirects=False)
     v_cookies = parse_set_cookie_headers(v_login)
 
     s_s = requests.Session()
+    s_pre = s_s.get(f"{SECURED_URL}/login")
+    s_pre_cookie = s_s.cookies.get("SECUREDSESSION")
     s_login = s_s.post(f"{SECURED_URL}/login", data={"username": "admin", "password": "admin123_super_secret"}, allow_redirects=False)
     s_cookies = parse_set_cookie_headers(s_login)
 
@@ -60,19 +62,26 @@ def run_cookie_security_tests():
 
     # Kiểm tra session_token trên vulnerable
     v_token = v_cookies.get("session_token", {})
-    v_token_insecure = not v_token.get("httponly", False)
+    v_token_insecure = ("session_token" in v_cookies) and (not v_token.get("httponly", False))
     print(f"    [Vulnerable] session_token HttpOnly: {v_token.get('httponly')} (Dễ bị đọc qua JavaScript: {v_token_insecure})")
 
-    # Kiểm tra session_token trên secured
-    s_token = s_cookies.get("session_token", {})
-    s_token_secure = s_token.get("httponly", False) and s_token.get("samesite") == "Strict"
-    print(f"    [Secured]    session_token HttpOnly: {s_token.get('httponly')}, SameSite: {s_token.get('samesite')} (An toàn: {s_token_secure})")
+    # Kiểm tra SECUREDSESSION trên secured (không phát hành cookie legacy session_token, đổi session ID khi đăng nhập)
+    s_token = s_cookies.get("SECUREDSESSION", {})
+    s_no_legacy = "session_token" not in s_cookies
+    s_rotated = (s_pre_cookie is None) or (s_token.get("value") != s_pre_cookie)
+    s_token_secure = (
+        s_no_legacy
+        and s_token.get("httponly", False)
+        and (s_token.get("samesite") or "").lower() == "strict"
+        and s_rotated
+    )
+    print(f"    [Secured]    SECUREDSESSION HttpOnly: {s_token.get('httponly')}, SameSite: {s_token.get('samesite')}, Secure: {s_token.get('secure')}, NoLegacyToken: {s_no_legacy}, Rotated: {s_rotated} (An toàn: {s_token_secure})")
 
     results.append({
         "id": "XSS08-TC01",
-        "desc": "Cấu hình thuộc tính HttpOnly và SameSite cho cookie phiên",
-        "vuln": f"HttpOnly={v_token.get('httponly')}, SameSite={v_token.get('samesite')} (Lỗ hổng rò rỉ cookie qua XSS)",
-        "sec": f"HttpOnly={s_token.get('httponly')}, SameSite={s_token.get('samesite')} (Chặn hoàn toàn JS truy cập và CSRF)",
+        "desc": "Cấu hình thuộc tính HttpOnly, SameSite=Strict và chống Session Fixation cho cookie phiên",
+        "vuln": f"session_token HttpOnly={v_token.get('httponly')}, SameSite={v_token.get('samesite')} (Lỗ hổng rò rỉ cookie qua XSS)",
+        "sec": f"SECUREDSESSION HttpOnly={s_token.get('httponly')}, SameSite={s_token.get('samesite')}, Secure={s_token.get('secure')}, Rotated={s_rotated}",
         "pass": v_token_insecure and s_token_secure
     })
 

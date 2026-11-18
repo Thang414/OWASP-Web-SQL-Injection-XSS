@@ -383,6 +383,7 @@ public class AppController {
                           @RequestParam(name = "password", defaultValue = "") String password,
                           HttpSession session,
                           HttpServletResponse response,
+                          RedirectAttributes redirectAttributes,
                           Model model) {
 
         if (username == null || username.trim().isEmpty()) {
@@ -417,6 +418,11 @@ public class AppController {
                 attachVulnerableSessionCookie(user, response);
                 log.info("[CORE-07][AUTH][SUCCESS] Dang nhap thanh cong (vulnerable) cho user='{}' (role='{}')",
                         user.getUsername(), user.getRole());
+
+                if (username.contains("'") || password.contains("'")) {
+                    redirectAttributes.addFlashAttribute("sqliLoginBypassed", true);
+                    redirectAttributes.addFlashAttribute("executedLoginSql", sql);
+                }
 
                 return "redirect:/index.php";
             } else {

@@ -209,6 +209,38 @@
             color: #047857;
             font-weight: 600;
         }
+        .sqli-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-sqli-fill {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #34d399;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-sqli-fill:hover {
+            background: #a7f3d0;
+        }
+        .btn-sqli-run {
+            background: #059669;
+            color: #ffffff;
+            border: 1px solid #047857;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-sqli-run:hover {
+            background: #047857;
+        }
         .back-link {
             text-align: center;
             margin-top: 20px;
@@ -249,7 +281,7 @@
         <a href="/">Về trang chủ</a> | <a href="/logout">Đăng xuất</a>
     </div>
 
-    <form method="POST" action="/login">
+    <form id="login-form" method="POST" action="/login">
         <div class="form-group">
             <label for="username">Tên đăng nhập:</label>
             <input id="username" type="text" name="username" placeholder="Nhập username giả lập (VD: nguyenvana)..." required>
@@ -260,6 +292,16 @@
         </div>
         <button class="btn-submit" type="submit">Đăng nhập</button>
     </form>
+
+    <section class="verify-box" aria-labelledby="sqli-result-title">
+        <h3 id="sqli-result-title">🛡️ Đối chứng ca kiểm thử SQL Injection (Lab cục bộ 8081)</h3>
+        <p style="margin-top:4px;"><strong>Dữ liệu kiểm thử giống 8080:</strong> Username <code>admin' -- </code> &amp; Password <code>sai_mat_khau_123</code>.</p>
+        <p style="margin-top:4px;"><strong>Kỳ vọng trên bản đã vá 8081:</strong> <code>PreparedStatement</code> tách biệt cú pháp SQL và dữ liệu tham số, nên ứng dụng từ chối đăng nhập (HTTP 200) và không tạo phiên.</p>
+        <div class="sqli-actions">
+            <button type="button" class="btn-sqli-fill btn-fill" data-username="admin' -- " data-password="sai_mat_khau_123">Điền mẫu SQLi vào form</button>
+            <button type="button" class="btn-sqli-run btn-fill" data-username="admin' -- " data-password="sai_mat_khau_123" data-autosubmit="true">▶ Chạy thử ca SQLi ngay</button>
+        </div>
+    </section>
 
     <div class="seed-box">
         <strong style="color: #0f172a;">Tài khoản giả lập trong lab (init.sql - không dùng tài khoản thật):</strong>
@@ -304,12 +346,6 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-
-    <div class="verify-box">
-        🛡️ <strong>Cơ chế bảo vệ chống Authentication Bypass:</strong><br>
-        1. Sử dụng <code>PreparedStatement</code>: Chuỗi độc hại như <code>admin' -- </code> chỉ được coi là giá trị chuỗi thuần túy.<br>
-        2. Xác thực mật khẩu bắt buộc: Không thể bỏ qua kiểm tra mật khẩu.
     </div>
 
     <div class="back-link">

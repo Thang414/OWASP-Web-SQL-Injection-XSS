@@ -209,6 +209,38 @@
             color: #78350f;
             font-weight: 600;
         }
+        .sqli-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-sqli-fill {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-sqli-fill:hover {
+            background: #fde68a;
+        }
+        .btn-sqli-run {
+            background: #dc2626;
+            color: #ffffff;
+            border: 1px solid #b91c1c;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-sqli-run:hover {
+            background: #b91c1c;
+        }
         .back-link {
             text-align: center;
             margin-top: 20px;
@@ -249,7 +281,7 @@
         <a href="/">Về trang chủ</a> | <a href="/logout">Đăng xuất</a>
     </div>
 
-    <form method="POST" action="/login">
+    <form id="login-form" method="POST" action="/login">
         <div class="form-group">
             <label for="username">Tên đăng nhập:</label>
             <input id="username" type="text" name="username" placeholder="Nhập username giả lập (VD: nguyenvana)..." required>
@@ -260,6 +292,16 @@
         </div>
         <button class="btn-submit" type="submit">Đăng nhập</button>
     </form>
+
+    <section class="hint-box" aria-labelledby="sqli-result-title">
+        <h3 id="sqli-result-title">🧪 Ca kiểm thử SQL Injection (Lab cục bộ 8080)</h3>
+        <p style="margin-top:4px;"><strong>Dữ liệu kiểm thử:</strong> Username <code>admin' -- </code> (có dấu cách cuối) &amp; Password <code>sai_mat_khau_123</code>.</p>
+        <p style="margin-top:4px;"><strong>Kỳ vọng trên bản lỗi 8080:</strong> Do nối chuỗi SQL trực tiếp, ứng dụng bỏ qua kiểm tra mật khẩu, chuyển về trang chủ (<code>/index.php</code>) và tạo phiên thật cho tài khoản <strong>admin</strong>.</p>
+        <div class="sqli-actions">
+            <button type="button" class="btn-sqli-fill" onclick="quickFill(&quot;admin' -- &quot;, 'sai_mat_khau_123')">Điền mẫu SQLi vào form</button>
+            <button type="button" class="btn-sqli-run" onclick="runSqliDemo(&quot;admin' -- &quot;, 'sai_mat_khau_123')">▶ Chạy thử ca SQLi ngay</button>
+        </div>
+    </section>
 
     <div class="seed-box">
         <strong style="color: #0f172a;">Tài khoản giả lập trong lab (init.sql - không dùng tài khoản thật):</strong>
@@ -306,13 +348,6 @@
         </table>
     </div>
 
-    <div class="hint-box">
-        💡 <strong>Mục tiêu demo SQL Injection (Authentication Bypass):</strong><br>
-        Nhập Username: <code>admin' -- </code> (hoặc <code>admin' OR 1=1 -- </code>)<br>
-        Mật khẩu: <i>để trống hoặc gõ bất kỳ</i><br>
-        👉 Kết quả: Đăng nhập thành công với quyền Admin!
-    </div>
-
     <div class="back-link">
         <a href="/">⬅ Quay lại trang chủ</a>
     </div>
@@ -325,6 +360,10 @@
     function quickFill(user, pass) {
         document.getElementById('username').value = user;
         document.getElementById('password').value = pass;
+    }
+    function runSqliDemo(user, pass) {
+        quickFill(user, pass);
+        document.getElementById('login-form').submit();
     }
 </script>
 

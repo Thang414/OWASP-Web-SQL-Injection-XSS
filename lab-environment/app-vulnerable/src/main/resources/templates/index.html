@@ -253,6 +253,20 @@
 <div class="container">
     <div th:replace="~{fragments/layout :: systemAlerts}"></div>
 
+    <div th:if="${sqliLoginBypassed}" style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:14px;padding:18px 20px;margin-bottom:24px;color:#78350f;box-shadow:0 4px 12px rgba(245,158,11,0.12);">
+        <div style="font-weight:800;font-size:15px;margin-bottom:8px;">
+            ⚠️ CA KIỂM THỬ SQL INJECTION THÀNH CÔNG (LAB CỤC BỘ 8080)
+        </div>
+        <p style="font-size:13.5px;margin-bottom:8px;">
+            Ứng dụng đã chuyển về trang chủ (<code>/index.php</code>) và tạo phiên thật cho tài khoản:
+            <strong th:if="${user != null}" th:text="${user.fullName + ' (' + user.username + ') — Quyền: ' + user.role}"></strong>.
+        </p>
+        <div style="background:#0f172a;color:#4ade80;padding:10px 14px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all;margin-bottom:10px;">
+            <span style="color:#facc15;">SQL thực thi:</span> <code th:text="${executedLoginSql}"></code>
+        </div>
+        <a href="/logout" style="display:inline-block;padding:6px 12px;background:#dc2626;color:#fff;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;">Đăng xuất để thử lại</a>
+    </div>
+
     <div class="search-hero">
         <h3>Tìm kiếm sản phẩm công nghệ</h3>
         <p>Thử nghiệm tìm kiếm sản phẩm và kịch bản tấn công SQL Injection / Reflected XSS</p>

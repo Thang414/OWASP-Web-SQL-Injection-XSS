@@ -76,3 +76,13 @@ if (usernameInput && passwordInput) {
     updatePasswordToggleVisibility();
     updatePreparedParamsPreview();
 }
+
+function toggleSimPanel() {
+    const p = document.getElementById('simulation-panel');
+    const lbl = document.getElementById('toggle-sim-label');
+    if (!p) return;
+    const isHidden = p.classList.toggle('is-hidden');
+    if (lbl) {
+        lbl.textContent = isHidden ? 'Bấm xem Mô phỏng 5 bước PreparedStatement bảo vệ hệ thống' : 'Thu gọn mô phỏng luồng thực thi';
+    }
+}

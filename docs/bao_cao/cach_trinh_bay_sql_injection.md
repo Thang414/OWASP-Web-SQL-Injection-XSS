@@ -56,6 +56,100 @@ SELECT * FROM users WHERE username = 'admin' -- ' AND password = 'sai_mat_khau_1
 
 ---
 
+## 🔬 MÔ PHỎNG CHI TIẾT 5 GIAI ĐOẠN QUÁ TRÌNH SQL INJECTION DIỄN RA (HẬU TRƯỜNG)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Attacker as Kẻ tấn công (Browser)
+    participant Server as Web Server (Spring Boot)
+    participant JDBC as JDBC Driver
+    participant DB as MariaDB Engine (Lexer/Parser)
+    participant Storage as Bảng CSDL (users)
+
+    Attacker->>Server: HTTP POST /login (username="admin' -- ", password="1")
+    Note over Server: Ghép chuỗi thô (Unsafe Concatenation):<br/>"SELECT * FROM users WHERE username = '" + u + "' AND password = '" + p + "'"
+    Server->>JDBC: conn.createStatement().executeQuery(rawSql)
+    JDBC->>DB: Gửi raw SQL string qua kết nối mạng
+    Note over DB: Bộ Lexer tách Token & Bộ Parser dựng AST:<br/>Gặp Token '-- ' ➔ Cắt bỏ hoàn toàn nhánh kiểm tra mật khẩu!
+    DB->>Storage: Quét bảng với điều kiện duy nhất: WHERE username = 'admin'
+    Storage-->>DB: Trả về dòng dữ liệu của user admin (id=1, role=admin)
+    DB-->>Server: ResultSet có bản ghi (resultSet.next() == true)
+    Note over Server: Xác thực thành công ➔ Tạo Session thật:<br/>session.setAttribute("user", adminUser)
+    Server-->>Attacker: HTTP 302 Redirect /index.php (Kèm Cookie phiên Admin)
+```
+
+### 1. Giai đoạn 1: Trình duyệt gửi gói tin (Client Request)
+- Kẻ tấn công nhập vào form và bấm Đăng nhập. Trình duyệt đóng gói HTTP POST gửi lên `/login`:
+  ```http
+  POST /login HTTP/1.1
+  Host: localhost:8080
+  Content-Type: application/x-www-form-urlencoded
+
+  username=admin%27%20--%20&password=1
+  ```
+
+### 2. Giai đoạn 2: Máy chủ Backend ghép chuỗi động (Unsafe String Concatenation)
+- Tại `AppController.java`, mã nguồn xử lý bằng cách cộng chuỗi trực tiếp:
+  ```java
+  String sql = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
+  ```
+- Chuỗi kết quả sinh ra trong bộ nhớ RAM của Spring Boot:
+  ```sql
+  SELECT * FROM users WHERE username = 'admin' -- ' AND password = '1'
+  ```
+- Backend dùng `Statement.executeQuery(sql)` gửi nguyên văn chuỗi này qua kết nối TCP tới MariaDB.
+
+### 3. Giai đoạn 3: Phân tích từ vựng CSDL (Lexer / Tokenizer)
+- MariaDB tiếp nhận chuỗi và bộ phân tích từ vựng (Lexer) bóc tách thành một danh sách các **Token**:
+  - Token 1: `KEYWORD(SELECT)`
+  - Token 2: `WILDCARD(*)`
+  - Token 3: `KEYWORD(FROM)`
+  - Token 4: `IDENTIFIER(users)`
+  - Token 5: `KEYWORD(WHERE)`
+  - Token 6: `IDENTIFIER(username)`
+  - Token 7: `OPERATOR(=)`
+  - Token 8: `LITERAL_STRING('admin')`  *(do dấu nháy đơn `'` đã đóng chuỗi tại đây)*
+  - Token 9: `COMMENT_START(-- )`  *(hai dấu gạch ngang và dấu cách kích hoạt chế độ comment dòng)*
+  - Các ký tự còn lại: `' AND password = '1'` bị Lexer xếp vào nội dung comment và **vứt bỏ khỏi luồng token**.
+
+### 4. Giai đoạn 4: Dựng Cây cú pháp trừu tượng (AST - Abstract Syntax Tree)
+- Bộ phân tích cú pháp (Parser) nhận luồng token đã bị cắt cụt và xây dựng cây cú pháp thực thi:
+  ```
+  [Bình thường khi không bị tấn công]:
+                 [SELECT * FROM users]
+                           |
+                        [WHERE]
+                           |
+                        [ AND ]
+                       /       \
+         [username = '...']   [password = '...']
+
+  [Khi bị SQL Injection với "admin' -- "]:
+                 [SELECT * FROM users]
+                           |
+                        [WHERE]
+                           |
+                 [username = 'admin']
+               (Toàn bộ nhánh AND password đã BỊ CẮT BỎ!)
+  ```
+- **Ý nghĩa then chốt:** Cơ chế bảo vệ mật khẩu của ứng dụng không hề chạy, vì trong cây cú pháp của CSDL hoàn toàn **không tồn tại** điều kiện kiểm tra mật khẩu nữa!
+
+### 5. Giai đoạn 5: Thực thi & Cấp phiên quản trị (Execution & Session Hijacking)
+- **Execution Engine** của CSDL chạy cây AST: Quét chỉ mục hoặc bảng `users`, tìm thấy dòng `username = 'admin'`.
+- CSDL trả về một `ResultSet` chứa dòng thông tin quản trị viên: `id = 1, username = 'admin', full_name = 'Quản trị viên hệ thống', role = 'admin'`.
+- Backend Java nhận kết quả:
+  ```java
+  if (rs.next()) {
+      User user = new User(rs.getInt("id"), rs.getString("username"), rs.getString("role"), ...);
+      session.setAttribute("user", user); // Tạo session đăng nhập thật
+      return "redirect:/"; // Chuyển về trang chủ
+  }
+  ```
+- Trình duyệt nhận phản hồi HTTP 302, tự động tải `/index.php` với Cookie phiên làm việc mới, chính thức hoàn tất cuộc tấn công.
+
+---
+
 ## PHẦN 2: DEMO CÁCH KHẮC PHỤC BẢO MẬT (ỨNG DỤNG AN TOÀN - CỔNG 8081)
 
 ### 📌 Bước 1: Mở màn hình đăng nhập bản bảo mật

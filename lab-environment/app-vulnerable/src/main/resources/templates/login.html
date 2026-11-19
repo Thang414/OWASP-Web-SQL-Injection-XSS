@@ -334,6 +334,112 @@
         .back-link a:hover {
             color: var(--primary);
         }
+        .btn-toggle-sim {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1.5px dashed #dc2626;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-toggle-sim:hover {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .sim-panel {
+            background: #0b1120;
+            color: #e2e8f0;
+            border: 1.5px solid #ef4444;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 14px;
+            font-size: 12.5px;
+        }
+        .sim-panel.is-hidden {
+            display: none !important;
+        }
+        .sim-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #fca5a5;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sim-step {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 14px;
+        }
+        .sim-step:last-child {
+            margin-bottom: 0;
+        }
+        .sim-step::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 24px;
+            bottom: -10px;
+            width: 2px;
+            background: #334155;
+        }
+        .sim-step:last-child::before {
+            display: none;
+        }
+        .sim-badge {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 22px;
+            height: 22px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .sim-step-header {
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 3px;
+        }
+        .sim-step-desc {
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .sim-code-box {
+            background: #1e293b;
+            padding: 7px 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11.5px;
+            word-break: break-all;
+            color: #38bdf8;
+            border-left: 3px solid #dc2626;
+        }
+        .sim-code-box .highlight {
+            color: #facc15;
+            font-weight: 700;
+        }
+        .sim-code-box .dropped {
+            color: #64748b;
+            text-decoration: line-through;
+        }
     </style>
 </head>
 <body>
@@ -398,6 +504,52 @@
             <button type="button" class="btn-sqli-run" onclick="runSqliDemo(&quot;admin' -- &quot;, 'sai_mat_khau_123')">▶ Chạy thử ca SQLi ngay</button>
         </div>
     </section>
+
+    <button type="button" class="btn-toggle-sim" onclick="toggleSimPanel()">
+        <span>🎬</span> <span id="toggle-sim-label">Bấm xem Mô phỏng 5 bước SQL Injection thực thi bên dưới (Hậu trường)</span>
+    </button>
+
+    <div id="simulation-panel" class="sim-panel is-hidden">
+        <div class="sim-title">
+            <span>🔬 Mô phỏng luồng thực thi SQLi (Client ➔ Server ➔ CSDL MariaDB)</span>
+            <span style="font-size:11px;color:#94a3b8;">5 Giai đoạn</span>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">1</div>
+            <div class="sim-step-header">1. Trình duyệt gửi Payload (HTTP POST)</div>
+            <div class="sim-step-desc">Kẻ tấn công gửi chuỗi đầu vào chứa ký tự điều khiển cú pháp SQL:</div>
+            <div class="sim-code-box">POST /login HTTP/1.1<br>username=<span class="highlight">admin' -- </span>&amp;password=<span class="highlight">1</span></div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">2</div>
+            <div class="sim-step-header">2. Backend Spring Boot nối chuỗi thô (Unsafe String Concatenation)</div>
+            <div class="sim-step-desc">Mã Java ghép thẳng giá trị mà không qua bất kỳ khâu lọc/thoát ký tự nào:</div>
+            <div class="sim-code-box">"SELECT * FROM users WHERE username = '" + user + "' AND password = '" + pass + "'"<br>➔ SELECT * FROM users WHERE username = '<span class="highlight">admin' -- </span>' AND password = '1'</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">3</div>
+            <div class="sim-step-header">3. CSDL MariaDB bóc tách Token (Lexer Analysis)</div>
+            <div class="sim-step-desc">Bộ Lexer cắt chuỗi SQL thành từng Token cú pháp. Ký tự <code>'</code> ngắt chuỗi sớm và gặp Token chú thích <code>-- </code>:</div>
+            <div class="sim-code-box">Tokens: [SELECT] [*] [FROM] [users] [WHERE] [username = 'admin'] [<span class="highlight">--</span>] ...</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">4</div>
+            <div class="sim-step-header">4. Cây cú pháp AST bị bẻ gãy (Syntax Tree Mutation)</div>
+            <div class="sim-step-desc">Toàn bộ phần phía sau <code>-- </code> bị CSDL loại bỏ (coi là comment). Nhánh kiểm tra mật khẩu bị CẮT BỎ hoàn toàn khỏi cây AST:</div>
+            <div class="sim-code-box">Cây lệnh thực thi: SELECT * FROM users WHERE username = 'admin' <span class="dropped">' AND password = '1'</span></div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">5</div>
+            <div class="sim-step-header">5. Khớp Quản trị viên &amp; Cấp quyền (Privilege Escalation)</div>
+            <div class="sim-step-desc">CSDL quét bảng và tìm thấy tài khoản <code>admin</code>. Backend thấy <code>resultSet.next() == true</code>, cấp phiên đăng nhập thật cho Admin và chuyển về trang chủ!</div>
+            <div class="sim-code-box" style="border-left-color:#22c55e;color:#4ade80;">session.setAttribute("user", adminUser);<br>HTTP 302 ➔ Redirect /index.php (Chiếm trọn phiên Admin)</div>
+        </div>
+    </div>
 
     <div class="seed-box">
         <strong style="color: #0f172a;">Tài khoản giả lập trong lab (init.sql - không dùng tài khoản thật):</strong>
@@ -544,6 +696,15 @@
     function runSqliDemo(user, pass) {
         quickFill(user, pass);
         document.getElementById('login-form').submit();
+    }
+    function toggleSimPanel() {
+        const p = document.getElementById('simulation-panel');
+        const lbl = document.getElementById('toggle-sim-label');
+        if (!p) return;
+        const isHidden = p.classList.toggle('is-hidden');
+        if (lbl) {
+            lbl.textContent = isHidden ? 'Bấm xem Mô phỏng 5 bước SQL Injection thực thi bên dưới (Hậu trường)' : 'Thu gọn mô phỏng luồng thực thi';
+        }
     }
 
     userEl.addEventListener('input', updateLiveSqlPreview);

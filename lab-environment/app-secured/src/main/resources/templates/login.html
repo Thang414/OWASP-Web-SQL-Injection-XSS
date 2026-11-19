@@ -337,6 +337,108 @@
         .back-link a:hover {
             color: var(--primary);
         }
+        .btn-toggle-sim {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1.5px dashed #059669;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-toggle-sim:hover {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+        .sim-panel {
+            background: #0b1120;
+            color: #e2e8f0;
+            border: 1.5px solid #059669;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 14px;
+            font-size: 12.5px;
+        }
+        .sim-panel.is-hidden {
+            display: none !important;
+        }
+        .sim-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #6ee7b7;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sim-step {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 14px;
+        }
+        .sim-step:last-child {
+            margin-bottom: 0;
+        }
+        .sim-step::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 24px;
+            bottom: -10px;
+            width: 2px;
+            background: #334155;
+        }
+        .sim-step:last-child::before {
+            display: none;
+        }
+        .sim-badge {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 22px;
+            height: 22px;
+            background: #059669;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .sim-step-header {
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 3px;
+        }
+        .sim-step-desc {
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .sim-code-box {
+            background: #1e293b;
+            padding: 7px 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11.5px;
+            word-break: break-all;
+            color: #38bdf8;
+            border-left: 3px solid #059669;
+        }
+        .sim-code-box .highlight {
+            color: #facc15;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -405,6 +507,52 @@
             <button type="button" class="btn-sqli-run btn-fill" data-username="admin' -- " data-password="sai_mat_khau_123" data-autosubmit="true">▶ Chạy thử ca SQLi ngay</button>
         </div>
     </section>
+
+    <button type="button" class="btn-toggle-sim" onclick="toggleSimPanel()">
+        <span>🛡️</span> <span id="toggle-sim-label">Bấm xem Mô phỏng 5 bước PreparedStatement bảo vệ hệ thống</span>
+    </button>
+
+    <div id="simulation-panel" class="sim-panel is-hidden">
+        <div class="sim-title">
+            <span>🛡️ Mô phỏng luồng bảo vệ PreparedStatement (Parameterized Query)</span>
+            <span style="font-size:11px;color:#94a3b8;">5 Giai đoạn</span>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">1</div>
+            <div class="sim-step-header">1. Trình duyệt gửi Payload giống bản 8080 (HTTP POST)</div>
+            <div class="sim-step-desc">Kẻ tấn công gửi đầu vào chứa ký tự đặc biệt hòng bẻ gãy câu lệnh SQL:</div>
+            <div class="sim-code-box">POST /login HTTP/1.1<br>username=<span class="highlight">admin' -- </span>&amp;password=<span class="highlight">1</span></div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">2</div>
+            <div class="sim-step-header">2. Backend gửi khung SQL cố định với Placeholder ?</div>
+            <div class="sim-step-desc">Mã Java tách biệt cấu trúc lệnh SQL và dữ liệu người dùng:</div>
+            <div class="sim-code-box">conn.prepareStatement("SELECT * FROM users WHERE username = ? AND password = ?");</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">3</div>
+            <div class="sim-step-header">3. CSDL biên dịch và đóng băng Cây cú pháp AST</div>
+            <div class="sim-step-desc">CSDL phân tích cú pháp trước khi nhận dữ liệu. Cây AST cố định 2 nhánh: <code>username = ?</code> VÀ <code>password = ?</code>:</div>
+            <div class="sim-code-box">AST đóng băng: [AND] ➔ [username = ?] &amp; [password = ?] (Không thể bị thay đổi)</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">4</div>
+            <div class="sim-step-header">4. Truyền giá trị tham số dưới dạng Literal Value</div>
+            <div class="sim-step-desc">Mọi ký tự <code>'</code>, <code>-- </code> chỉ là chuỗi ký tự dữ liệu để so sánh, không có quyền thực thi mã:</div>
+            <div class="sim-code-box">stmt.setString(1, "admin' -- "); // Literal String (11 ký tự)<br>stmt.setString(2, "1");</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">5</div>
+            <div class="sim-step-header">5. Không khớp bản ghi &amp; Từ chối an toàn (Safe Defense)</div>
+            <div class="sim-step-desc">CSDL tìm user có tên đúng bằng <code>admin' -- </code> ➔ Kết quả rỗng (0 dòng). Ứng dụng từ chối đăng nhập, không tạo phiên!</div>
+            <div class="sim-code-box" style="border-left-color:#22c55e;color:#4ade80;">resultSet.next() == false ➔ HTTP 200 "Tên đăng nhập hoặc mật khẩu không chính xác"</div>
+        </div>
+    </div>
 
     <div class="seed-box">
         <strong style="color: #0f172a;">Tài khoản giả lập trong lab (init.sql - không dùng tài khoản thật):</strong>

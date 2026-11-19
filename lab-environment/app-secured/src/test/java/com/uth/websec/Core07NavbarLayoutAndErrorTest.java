@@ -217,10 +217,12 @@ class Core07NavbarLayoutAndErrorTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("login"))
                 .andExpect(content().string(containsString(AppController.GENERIC_SERVICE_ERROR_MSG)))
-                .andExpect(content().string(not(containsString("SELECT * FROM"))))
-                .andExpect(content().string(not(containsString("users"))))
+                // Trang login có khung minh họa tĩnh in sẵn câu PreparedStatement mẫu ("SELECT * FROM users ... ?"),
+                // nên chỉ dò dấu hiệu lộ lỗi CSDL thật, không dò chữ SELECT/users.
                 .andExpect(content().string(not(containsString("SQL statement"))))
-                .andExpect(content().string(not(containsString("Table"))));
+                .andExpect(content().string(not(containsString("Table"))))
+                .andExpect(content().string(not(containsString("not found"))))
+                .andExpect(content().string(not(containsString("SQLException"))));
     }
 
     @Test

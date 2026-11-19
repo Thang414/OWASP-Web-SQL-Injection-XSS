@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,6 +36,38 @@ public class AppController {
 
     public User resolveSessionUser(HttpSession session) {
         return session == null ? null : (User) session.getAttribute("user");
+    }
+
+    private boolean containsDisallowedControlChars(String value, boolean allowWhitespaceControls) {
+        if (value == null) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (Character.isISOControl(ch)) {
+                if (allowWhitespaceControls && (ch == '\n' || ch == '\r' || ch == '\t')) {
+                    continue;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String safeProductRedirectUrl(String rawProductId) {
+        if (rawProductId == null) {
+            return "redirect:/";
+        }
+        String sanitized = rawProductId.trim();
+        if (sanitized.isEmpty() || sanitized.length() > 64 || containsDisallowedControlChars(sanitized, false)) {
+            sanitized = "invalid";
+        }
+        String target = UriComponentsBuilder.fromPath("/product")
+                .queryParam("id", sanitized)
+                .build()
+                .encode()
+                .toUriString();
+        return "redirect:" + target;
     }
 
     // 1. Trang chủ danh sách sản phẩm (Secured)
@@ -250,7 +283,7 @@ public class AppController {
         } catch (NumberFormatException e) {
             log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan - Ma san pham khong hop le: '{}'", productIdStr);
             redirectAttributes.addFlashAttribute("commentError", "Mã sản phẩm không hợp lệ!");
-            return "redirect:/product?id=" + productIdStr;
+            return safeProductRedirectUrl(productIdStr);
         }
 
         String cleanContent = (content == null) ? "" : content.trim();
@@ -258,6 +291,20 @@ public class AppController {
             log.warn("[CORE-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Noi dung rong hoac chi chua khoang trang",
                     productId);
             redirectAttributes.addFlashAttribute("commentError", "Nội dung bình luận không được để trống hoặc chỉ chứa khoảng trắng!");
+            return "redirect:/product?id=" + productId;
+        }
+
+        if (containsDisallowedControlChars(cleanAuthor, false)) {
+            log.warn("[XSS-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Ten tac gia chua ky tu dieu khien khong hop le",
+                    productId);
+            redirectAttributes.addFlashAttribute("commentError", "Tên người bình luận chứa ký tự điều khiển không hợp lệ!");
+            return "redirect:/product?id=" + productId;
+        }
+
+        if (containsDisallowedControlChars(cleanContent, true)) {
+            log.warn("[XSS-06][WRITE][VALIDATION_FAILED] Tu choi luu binh luan cho product_id='{}' - Noi dung chua ky tu dieu khien khong hop le",
+                    productId);
+            redirectAttributes.addFlashAttribute("commentError", "Nội dung bình luận chứa ký tự điều khiển không hợp lệ!");
             return "redirect:/product?id=" + productId;
         }
 

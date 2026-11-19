@@ -89,6 +89,89 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
         }
+        .password-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-wrap input {
+            padding-right: 46px;
+        }
+        .password-wrap input::-ms-reveal,
+        .password-wrap input::-ms-clear {
+            display: none;
+        }
+        .btn-toggle-pass {
+            position: absolute;
+            right: 8px;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            color: #757575;
+            border: none;
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        .btn-toggle-pass:hover {
+            background: rgba(15, 23, 42, 0.06);
+            color: #334155;
+        }
+        .btn-toggle-pass.is-hidden,
+        .btn-toggle-pass svg.is-hidden,
+        .btn-toggle-pass svg[hidden] {
+            display: none !important;
+        }
+        .sql-live-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1.5px solid #10b981;
+            border-radius: 12px;
+            padding: 13px 15px;
+            margin-top: 16px;
+            font-size: 12.5px;
+        }
+        .sql-live-title {
+            color: #6ee7b7;
+            font-weight: 700;
+            margin-bottom: 7px;
+            font-size: 12px;
+            letter-spacing: 0.2px;
+        }
+        .sql-live-code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            line-height: 1.65;
+            word-break: break-all;
+            color: #34d399;
+            background: #1e293b;
+            padding: 9px 11px;
+            border-radius: 8px;
+        }
+        .sql-param-list {
+            margin-top: 8px;
+            display: grid;
+            gap: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            background: #1e293b;
+            padding: 8px 11px;
+            border-radius: 8px;
+            color: #cbd5e1;
+        }
+        .sql-param-val {
+            color: #93c5fd;
+            word-break: break-all;
+        }
+        .sql-live-status {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #a7f3d0;
+            font-weight: 600;
+        }
         button.btn-submit {
             width: 100%;
             padding: 13px;
@@ -209,6 +292,38 @@
             color: #047857;
             font-weight: 600;
         }
+        .sqli-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-sqli-fill {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #34d399;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-sqli-fill:hover {
+            background: #a7f3d0;
+        }
+        .btn-sqli-run {
+            background: #059669;
+            color: #ffffff;
+            border: 1px solid #047857;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-sqli-run:hover {
+            background: #047857;
+        }
         .back-link {
             text-align: center;
             margin-top: 20px;
@@ -221,6 +336,108 @@
         }
         .back-link a:hover {
             color: var(--primary);
+        }
+        .btn-toggle-sim {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1.5px dashed #059669;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-toggle-sim:hover {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+        .sim-panel {
+            background: #0b1120;
+            color: #e2e8f0;
+            border: 1.5px solid #059669;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 14px;
+            font-size: 12.5px;
+        }
+        .sim-panel.is-hidden {
+            display: none !important;
+        }
+        .sim-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #6ee7b7;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sim-step {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 14px;
+        }
+        .sim-step:last-child {
+            margin-bottom: 0;
+        }
+        .sim-step::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 24px;
+            bottom: -10px;
+            width: 2px;
+            background: #334155;
+        }
+        .sim-step:last-child::before {
+            display: none;
+        }
+        .sim-badge {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 22px;
+            height: 22px;
+            background: #059669;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .sim-step-header {
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 3px;
+        }
+        .sim-step-desc {
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .sim-code-box {
+            background: #1e293b;
+            padding: 7px 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11.5px;
+            word-break: break-all;
+            color: #38bdf8;
+            border-left: 3px solid #059669;
+        }
+        .sim-code-box .highlight {
+            color: #facc15;
+            font-weight: 700;
         }
     </style>
 </head>
@@ -249,17 +466,93 @@
         <a href="/">Về trang chủ</a> | <a href="/logout">Đăng xuất</a>
     </div>
 
-    <form method="POST" action="/login">
+    <form id="login-form" method="POST" action="/login">
         <div class="form-group">
             <label for="username">Tên đăng nhập:</label>
             <input id="username" type="text" name="username" placeholder="Nhập username giả lập (VD: nguyenvana)..." required>
         </div>
         <div class="form-group">
             <label for="password">Mật khẩu:</label>
-            <input id="password" type="password" name="password" placeholder="Nhập mật khẩu..." required>
+            <div class="password-wrap">
+                <input id="password" type="password" name="password" placeholder="Nhập mật khẩu..." required>
+                <button type="button" id="toggle-pass-btn" class="btn-toggle-pass is-hidden" aria-label="Hiện mật khẩu" title="Hiện mật khẩu">
+                    <svg id="eye-open-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                    <svg id="eye-closed-icon" class="is-hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" hidden>
+                        <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
         <button class="btn-submit" type="submit">Đăng nhập</button>
     </form>
+
+    <div class="sql-live-box" aria-live="polite">
+        <div class="sql-live-title">🛡️ Xem trước cơ chế truy vấn (PreparedStatement — Secured 8081)</div>
+        <div id="sql-prepared-template" class="sql-live-code">PreparedStatement: tham số hóa đầu vào bằng placeholder <strong>?</strong></div>
+        <div class="sql-param-list">
+            <div>Tham số <code>?1</code> (username): <span id="param-user-val" class="sql-param-val">""</span></div>
+            <div>Tham số <code>?2</code> (password): <span id="param-pass-val" class="sql-param-val">""</span></div>
+        </div>
+        <div class="sql-live-status">✅ Cấu trúc truy vấn cố định — mọi ký tự như <code>'</code> hay <code>-- </code> chỉ được truyền như chuỗi dữ liệu thuần túy.</div>
+    </div>
+
+    <section class="verify-box" aria-labelledby="sqli-result-title">
+        <h3 id="sqli-result-title">🛡️ Đối chứng ca kiểm thử SQL Injection (Lab cục bộ 8081)</h3>
+        <p style="margin-top:4px;"><strong>Dữ liệu kiểm thử giống 8080:</strong> Username <code>admin' -- </code> &amp; Password <code>sai_mat_khau_123</code>.</p>
+        <p style="margin-top:4px;"><strong>Kỳ vọng trên bản đã vá 8081:</strong> <code>PreparedStatement</code> tách biệt cú pháp SQL và dữ liệu tham số, nên ứng dụng từ chối đăng nhập (HTTP 200) và không tạo phiên.</p>
+        <div class="sqli-actions">
+            <button type="button" class="btn-sqli-fill btn-fill" data-username="admin' -- " data-password="sai_mat_khau_123">Điền mẫu SQLi vào form</button>
+            <button type="button" class="btn-sqli-run btn-fill" data-username="admin' -- " data-password="sai_mat_khau_123" data-autosubmit="true">▶ Chạy thử ca SQLi ngay</button>
+        </div>
+    </section>
+
+    <button type="button" class="btn-toggle-sim" onclick="toggleSimPanel()">
+        <span>🛡️</span> <span id="toggle-sim-label">Bấm xem Mô phỏng 5 bước PreparedStatement bảo vệ hệ thống</span>
+    </button>
+
+    <div id="simulation-panel" class="sim-panel is-hidden">
+        <div class="sim-title">
+            <span>🛡️ Mô phỏng luồng bảo vệ PreparedStatement (Parameterized Query)</span>
+            <span style="font-size:11px;color:#94a3b8;">5 Giai đoạn</span>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">1</div>
+            <div class="sim-step-header">1. Trình duyệt gửi Payload giống bản 8080 (HTTP POST)</div>
+            <div class="sim-step-desc">Kẻ tấn công gửi đầu vào chứa ký tự đặc biệt hòng bẻ gãy câu lệnh SQL:</div>
+            <div class="sim-code-box">POST /login HTTP/1.1<br>username=<span class="highlight">admin' -- </span>&amp;password=<span class="highlight">1</span></div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">2</div>
+            <div class="sim-step-header">2. Backend gửi khung SQL cố định với Placeholder ?</div>
+            <div class="sim-step-desc">Mã Java tách biệt cấu trúc lệnh SQL và dữ liệu người dùng:</div>
+            <div class="sim-code-box">conn.prepareStatement("SELECT * FROM users WHERE username = ? AND password = ?");</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">3</div>
+            <div class="sim-step-header">3. CSDL biên dịch và đóng băng Cây cú pháp AST</div>
+            <div class="sim-step-desc">CSDL phân tích cú pháp trước khi nhận dữ liệu. Cây AST cố định 2 nhánh: <code>username = ?</code> VÀ <code>password = ?</code>:</div>
+            <div class="sim-code-box">AST đóng băng: [AND] ➔ [username = ?] &amp; [password = ?] (Không thể bị thay đổi)</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">4</div>
+            <div class="sim-step-header">4. Truyền giá trị tham số dưới dạng Literal Value</div>
+            <div class="sim-step-desc">Mọi ký tự <code>'</code>, <code>-- </code> chỉ là chuỗi ký tự dữ liệu để so sánh, không có quyền thực thi mã:</div>
+            <div class="sim-code-box">stmt.setString(1, "admin' -- "); // Literal String (11 ký tự)<br>stmt.setString(2, "1");</div>
+        </div>
+
+        <div class="sim-step">
+            <div class="sim-badge">5</div>
+            <div class="sim-step-header">5. Không khớp bản ghi &amp; Từ chối an toàn (Safe Defense)</div>
+            <div class="sim-step-desc">CSDL tìm user có tên đúng bằng <code>admin' -- </code> ➔ Kết quả rỗng (0 dòng). Ứng dụng từ chối đăng nhập, không tạo phiên!</div>
+            <div class="sim-code-box" style="border-left-color:#22c55e;color:#4ade80;">resultSet.next() == false ➔ HTTP 200 "Tên đăng nhập hoặc mật khẩu không chính xác"</div>
+        </div>
+    </div>
 
     <div class="seed-box">
         <strong style="color: #0f172a;">Tài khoản giả lập trong lab (init.sql - không dùng tài khoản thật):</strong>
@@ -304,12 +597,6 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-
-    <div class="verify-box">
-        🛡️ <strong>Cơ chế bảo vệ chống Authentication Bypass:</strong><br>
-        1. Sử dụng <code>PreparedStatement</code>: Chuỗi độc hại như <code>admin' -- </code> chỉ được coi là giá trị chuỗi thuần túy.<br>
-        2. Xác thực mật khẩu bắt buộc: Không thể bỏ qua kiểm tra mật khẩu.
     </div>
 
     <div class="back-link">

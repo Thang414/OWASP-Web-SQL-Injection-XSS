@@ -23,6 +23,10 @@ public class SecurityHeadersFilter implements Filter {
         // 3. Content Security Policy (CSP): Ngăn chặn inline script và domain lạ
         res.setHeader("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline';");
 
+        // 4. Giảm rò rỉ thông tin URL nguồn (Referrer) và vô hiệu hóa quyền thiết bị không cần thiết
+        res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+        res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+
         chain.doFilter(request, response);
     }
 }

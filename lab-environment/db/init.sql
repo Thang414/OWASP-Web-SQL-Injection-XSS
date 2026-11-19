@@ -4,14 +4,18 @@ SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS ecommerce_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ecommerce_db;
 
--- Đảm bảo xóa bảng theo đúng thứ tự ràng buộc khóa ngoại để phục vụ quy trình reset dữ liệu
+-- ============================================================================
+-- PHẦN 1: KHỞI TẠO CẤU TRÚC LƯỢC ĐỒ CƠ SỞ DỮ LIỆU (SCHEMA / DDL)
+-- ============================================================================
+-- Xóa bảng theo thứ tự phụ thuộc khóa ngoại (comments -> products -> users)
+-- kết hợp tạm tắt FOREIGN_KEY_CHECKS để phục vụ quy trình reset dữ liệu an toàn
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS users;
 SET FOREIGN_KEY_CHECKS = 1;
 
--- 1. Bảng người dùng (Chứa tài khoản admin & khách hàng)
+-- 1.1 Bảng người dùng (Chứa tài khoản quản trị & khách hàng giả lập)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -21,14 +25,7 @@ CREATE TABLE users (
     credit_card VARCHAR(30)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Thêm dữ liệu tài khoản mẫu
-INSERT INTO users (username, password, full_name, role, credit_card) VALUES
-('admin', 'admin123_super_secret', 'Quản Trị Viên Hệ Thống', 'admin', '4111-2222-3333-4444'),
-('manager', 'manager@2026', 'Trưởng Phòng Kinh Doanh', 'manager', '4555-6666-7777-8888'),
-('nguyenvana', 'pass123456', 'Nguyễn Văn A', 'customer', '9704-1111-2222-3333'),
-('tranthib', 'passwordB123', 'Trần Thị B', 'customer', '9704-4444-5555-6666');
-
--- 2. Bảng sản phẩm TMĐT
+-- 1.2 Bảng sản phẩm TMĐT
 CREATE TABLE products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -37,14 +34,7 @@ CREATE TABLE products (
     category VARCHAR(50)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO products (name, description, price, category) VALUES
-('iPhone 15 Pro Max', 'Điện thoại thông minh Apple 256GB Titan tự nhiên', 29990000.00, 'Điện thoại'),
-('Samsung Galaxy S24 Ultra', 'Flagship AI Phone đỉnh cao Snapdragon 8 Gen 3', 27490000.00, 'Điện thoại'),
-('Laptop Dell XPS 15', 'Laptop cao cấp Intel Core i7, 16GB RAM, 512GB SSD', 35000000.00, 'Máy tính'),
-('MacBook Air M2', 'Thiết kế siêu mỏng nhẹ, pin 18 tiếng, Apple Silicon M2', 22500000.00, 'Máy tính'),
-('Tai nghe Sony WH-1000XM5', 'Tai nghe chống ồn chủ động cao cấp', 7990000.00, 'Phụ kiện');
-
--- 3. Bảng bình luận/đánh giá sản phẩm (Dùng để demo Stored XSS)
+-- 1.3 Bảng bình luận/đánh giá sản phẩm (Khóa ngoại tham chiếu products.id)
 CREATE TABLE comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
@@ -54,6 +44,28 @@ CREATE TABLE comments (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================================================
+-- PHẦN 2: NẠP DỮ LIỆU GIẢ LẬP MẪU (SEED DATA / DML)
+-- Lưu ý: Toàn bộ tài khoản, mật khẩu và số thẻ tín dụng bên dưới là dữ liệu giả
+-- phục vụ nghiên cứu lab cục bộ, không phải thông tin cá nhân thật.
+-- ============================================================================
+
+-- 2.1 Dữ liệu tài khoản giả lập (4 bản ghi)
+INSERT INTO users (username, password, full_name, role, credit_card) VALUES
+('admin', 'admin123_super_secret', 'Quản Trị Viên Hệ Thống', 'admin', '4111-2222-3333-4444'),
+('manager', 'manager@2026', 'Trưởng Phòng Kinh Doanh', 'manager', '4555-6666-7777-8888'),
+('nguyenvana', 'pass123456', 'Nguyễn Văn A', 'customer', '9704-1111-2222-3333'),
+('tranthib', 'passwordB123', 'Trần Thị B', 'customer', '9704-4444-5555-6666');
+
+-- 2.2 Dữ liệu sản phẩm giả lập (5 bản ghi)
+INSERT INTO products (name, description, price, category) VALUES
+('iPhone 15 Pro Max', 'Điện thoại thông minh Apple 256GB Titan tự nhiên', 29990000.00, 'Điện thoại'),
+('Samsung Galaxy S24 Ultra', 'Flagship AI Phone đỉnh cao Snapdragon 8 Gen 3', 27490000.00, 'Điện thoại'),
+('Laptop Dell XPS 15', 'Laptop cao cấp Intel Core i7, 16GB RAM, 512GB SSD', 35000000.00, 'Máy tính'),
+('MacBook Air M2', 'Thiết kế siêu mỏng nhẹ, pin 18 tiếng, Apple Silicon M2', 22500000.00, 'Máy tính'),
+('Tai nghe Sony WH-1000XM5', 'Tai nghe chống ồn chủ động cao cấp', 7990000.00, 'Phụ kiện');
+
+-- 2.3 Dữ liệu bình luận giả lập (3 bản ghi: SP 1 có 2 bình luận, SP 2 có 1, SP 3-5 chưa có)
 INSERT INTO comments (product_id, author, content) VALUES
 (1, 'Nguyễn Văn A', 'Sản phẩm dùng rất mượt, camera chụp đêm rất đỉnh!'),
 (1, 'Trần Thị B', 'Pin trâu, dùng cả ngày thoải mái.'),

@@ -122,8 +122,9 @@ def run_matrix_tests():
     v_prod = requests.get(f"{VULN_URL}/product", params={"id": detail_payload}, timeout=5)
     s_prod = requests.get(f"{SECURED_URL}/product", params={"id": detail_payload}, timeout=5)
 
-    v_detail_injected = "INJECTED_DETAIL_MARKER" in v_prod.text
-    s_detail_safe = "INJECTED_DETAIL_MARKER" not in s_prod.text
+    v_detail_injected = "<h2>INJECTED_DETAIL_MARKER</h2>" in v_prod.text
+    s_detail_safe = ("<h2>INJECTED_DETAIL_MARKER</h2>" not in s_prod.text and
+                     "Sản phẩm không tồn tại hoặc đã bị xóa!" in s_prod.text)
     record_scenario(
         "SCN-SQLI-03",
         "SQL Injection",
@@ -138,28 +139,30 @@ def run_matrix_tests():
     # -------------------------------------------------------------------------
     # 4. SCN-SQLI-04: SQL INJECTION TRÊN THAO TÁC THÊM BÌNH LUẬN (INSERT INJECTION)
     # -------------------------------------------------------------------------
-    cmt_sqli_author = "Tester', 'Injected Content By SQLi'); -- "
-    # Kiểm tra ứng dụng dễ bị tổn thương trên sản phẩm 1
-    requests.post(f"{VULN_URL}/product", data={"product_id": "1", "author": cmt_sqli_author, "content": "OriginalContent"}, allow_redirects=True, timeout=5)
+    cmt_sqli_product_id = "1, 'SQLI_INJECTED_AUTHOR', 'Injected Content By SQLi'), (1"
+    # Kiểm tra ứng dụng dễ bị tổn thương trên sản phẩm 1 (nối chuỗi product_id vào VALUES)
+    requests.post(f"{VULN_URL}/product", data={"product_id": cmt_sqli_product_id, "author": "Tester", "content": "OriginalContent"}, allow_redirects=True, timeout=5)
     v_prod_view = requests.get(f"{VULN_URL}/product?id=1", timeout=5)
 
-    # Kiểm tra ứng dụng an toàn trên sản phẩm 2
-    requests.post(f"{SECURED_URL}/product", data={"product_id": "2", "author": cmt_sqli_author, "content": "OriginalSafeContent"}, allow_redirects=True, timeout=5)
+    # Kiểm tra ứng dụng an toàn chặn payload product_id và lưu nguyên vẹn tác giả có dấu nháy đơn
+    s_sqli_resp = requests.post(f"{SECURED_URL}/product", data={"product_id": cmt_sqli_product_id, "author": "Tester", "content": "OriginalSafeContent"}, allow_redirects=True, timeout=5)
+    requests.post(f"{SECURED_URL}/product", data={"product_id": "2", "author": "O'Brien", "content": "OriginalSafeContent"}, allow_redirects=True, timeout=5)
     s_prod_view = requests.get(f"{SECURED_URL}/product?id=2", timeout=5)
 
     v_insert_injected = '<div class="comment-body">Injected Content By SQLi</div>' in v_prod_view.text
-    s_insert_safe = ('<div class="comment-body">OriginalSafeContent</div>' in s_prod_view.text and
+    s_insert_safe = ("Mã sản phẩm không hợp lệ!" in s_sqli_resp.text and
+                     '<div class="comment-body">OriginalSafeContent</div>' in s_prod_view.text and
                      '<div class="comment-body">Injected Content By SQLi</div>' not in s_prod_view.text and
-                     ('Tester&#39;' in s_prod_view.text or "Tester'" in s_prod_view.text))
+                     ("O&#39;Brien" in s_prod_view.text or "O'Brien" in s_prod_view.text))
     record_scenario(
         "SCN-SQLI-04",
         "SQL Injection",
         "POST /product",
-        f"author=\"{cmt_sqli_author}\", content=\"OriginalSafeContent\"",
-        "Nối chuỗi SQL thô trong INSERT INTO comments -> Tách cột làm nội dung bình luận bị chèn",
-        "PreparedStatement (?, ?, ?) cô lập toàn bộ tham số, lưu nguyên vẹn trường author",
+        f"product_id=\"{cmt_sqli_product_id}\", author=\"Tester\"",
+        "Nối chuỗi product_id trong INSERT INTO comments -> Chèn thêm bản ghi bình luận ngoài ý muốn",
+        "Ép kiểu product_id > 0 + PreparedStatement (?, ?, ?) chặn tiêm và giữ nguyên ký tự nháy đơn",
         v_insert_injected and s_insert_safe,
-        "Tham số hóa toàn bộ câu lệnh INSERT chống ngắt chuỗi và chèn cột",
+        "Tham số hóa toàn bộ câu lệnh INSERT chống ngắt chuỗi và chèn bản ghi giả",
     )
 
     # -------------------------------------------------------------------------
@@ -276,7 +279,10 @@ def run_matrix_tests():
 
     print("-" * 80)
     print(f"TỔNG SỐ KỊCH BẢN ĐỐI CHỨNG: {total_scn} | ĐẠT: {passed_scn} | KHÔNG ĐẠT: {failed_scn}")
-    print("KẾT LUẬN: BỘ TIÊU CHÍ ĐỐI CHỨNG ĐÃ ĐƯỢC CHỐT VÀ XÁC THỰC THÀNH CÔNG 100%!")
+    if failed_scn == 0:
+        print("KẾT LUẬN: BỘ TIÊU CHÍ ĐỐI CHỨNG ĐÃ ĐƯỢC CHỐT VÀ XÁC THỰC THÀNH CÔNG 100%!")
+    else:
+        print(f"KẾT LUẬN: CÒN {failed_scn}/{total_scn} KỊCH BẢN CHƯA ĐẠT — CẦN RÀ SOÁT!")
     print("=" * 80)
 
     return failed_scn == 0

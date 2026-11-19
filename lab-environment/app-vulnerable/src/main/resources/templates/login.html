@@ -151,24 +151,6 @@
             padding: 9px 11px;
             border-radius: 8px;
         }
-        .sql-commented {
-            color: #94a3b8;
-            text-decoration: line-through;
-            opacity: 0.75;
-        }
-        .sql-injected-part {
-            color: #fbbf24;
-            font-weight: 700;
-        }
-        .sql-live-status {
-            margin-top: 8px;
-            font-size: 12px;
-            color: #cbd5e1;
-        }
-        .sql-live-status.danger {
-            color: #fde047;
-            font-weight: 700;
-        }
         button.btn-submit {
             width: 100%;
             padding: 13px;
@@ -492,7 +474,6 @@
     <div class="sql-live-box" aria-live="polite">
         <div class="sql-live-title">🔍 Xem trước câu lệnh SQL sẽ thực thi (Nối chuỗi trực tiếp — Vulnerable 8080)</div>
         <div id="sql-live-code" class="sql-live-code"></div>
-        <div id="sql-live-status" class="sql-live-status"></div>
     </div>
 
     <section class="hint-box" aria-labelledby="sqli-result-title">
@@ -608,7 +589,6 @@
     const userEl = document.getElementById('username');
     const passEl = document.getElementById('password');
     const sqlCodeEl = document.getElementById('sql-live-code');
-    const sqlStatusEl = document.getElementById('sql-live-status');
     const toggleBtn = document.getElementById('toggle-pass-btn');
     const eyeOpenIcon = document.getElementById('eye-open-icon');
     const eyeClosedIcon = document.getElementById('eye-closed-icon');
@@ -643,45 +623,8 @@
     }
 
     function updateLiveSqlPreview() {
-        const u = userEl.value;
-        const p = passEl.value;
-        const fullSql = "SELECT * FROM users WHERE username = '" + u + "' AND password = '" + p + "'";
-        sqlCodeEl.textContent = '';
-
-        // Phát hiện vị trí chú thích SQL (--  hoặc #) sau khi nối chuỗi
-        const dashCommentIdx = fullSql.indexOf('-- ');
-        const hashCommentIdx = fullSql.indexOf('#');
-        let commentIdx = -1;
-        if (dashCommentIdx !== -1 && hashCommentIdx !== -1) {
-            commentIdx = Math.min(dashCommentIdx, hashCommentIdx);
-        } else {
-            commentIdx = Math.max(dashCommentIdx, hashCommentIdx);
-        }
-
-        if (commentIdx !== -1) {
-            const activeSpan = document.createElement('span');
-            activeSpan.textContent = fullSql.slice(0, commentIdx);
-            const commentedSpan = document.createElement('span');
-            commentedSpan.className = 'sql-commented';
-            commentedSpan.textContent = fullSql.slice(commentIdx);
-            sqlCodeEl.appendChild(activeSpan);
-            sqlCodeEl.appendChild(commentedSpan);
-
-            sqlStatusEl.className = 'sql-live-status danger';
-            sqlStatusEl.textContent = '⚠️ Phần gạch ngang phía sau đã bị biến thành chú thích SQL — kiểm tra mật khẩu bị bỏ qua hoàn toàn!';
-        } else if (/'\s*or\s+/i.test(u) || /'\s*or\s+/i.test(p)) {
-            const span = document.createElement('span');
-            span.className = 'sql-injected-part';
-            span.textContent = fullSql;
-            sqlCodeEl.appendChild(span);
-
-            sqlStatusEl.className = 'sql-live-status danger';
-            sqlStatusEl.textContent = '⚠️ Phát hiện mệnh đề OR làm thay đổi logic điều kiện WHERE của câu truy vấn!';
-        } else {
-            sqlCodeEl.textContent = fullSql;
-            sqlStatusEl.className = 'sql-live-status';
-            sqlStatusEl.textContent = 'ℹ️ Truy vấn bình thường: hệ thống đang kiểm tra cả username và password.';
-        }
+        // Hiện nguyên văn câu SQL sau khi nối chuỗi; phần giải thích do người thuyết trình nói.
+        sqlCodeEl.textContent = "SELECT * FROM users WHERE username = '" + userEl.value + "' AND password = '" + passEl.value + "'";
     }
 
     function quickFill(user, pass) {

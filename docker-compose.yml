@@ -78,7 +78,7 @@ services:
     volumes:
       - ./exploits/xss/cookie_stealer_server:/app
     working_dir: /app
-    command: python app.py
+    command: python -u app.py
     networks:
       - websec_net
 

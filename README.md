@@ -1,136 +1,200 @@
-# ĐỒ ÁN AN NINH MẠNG (UTH)
-## ĐỀ TÀI: KHAI THÁC LỖ HỔNG WEB (OWASP TOP 10) VÀ GIẢI PHÁP KHẮC PHỤC
-**Trọng tâm: SQL Injection & Cross-Site Scripting (XSS) trên Ứng dụng Thương mại Điện tử Giả lập (Java Spring Boot)**
+# SQL Injection và XSS trên ứng dụng thương mại điện tử giả lập (UTH E-Shop)
 
----
+Đồ án môn An ninh mạng, Trường Đại học Giao thông vận tải TP.HCM (UTH). Đề tài số 3: **Khai thác lỗ hổng Web (OWASP Top 10) và giải pháp khắc phục**, tập trung vào SQL Injection và Cross-Site Scripting (XSS).
 
-## 📌 1. Giới thiệu Đề tài
-Dự án được xây dựng nhằm phục vụ học phần An ninh mạng tại **Trường Đại học Giao thông vận tải TP.HCM (UTH)**.
-Hệ thống Web TMĐT được phát triển bằng **Java (Spring Boot + Thymeleaf)** kết hợp **MariaDB / MySQL**, triển khai đầy đủ theo quy trình chuẩn 4 bước của giảng viên:
-1. **Lab Setup**: Dựng môi trường Web TMĐT (Vulnerable & Secured) bằng Docker Compose.
-2. **Exploitation**: Thực hiện tấn công khai thác SQL Injection (Bypass Login, Union-based, SQLMap) và XSS (Reflected & Stored Session Hijacking).
-3. **Defense & Mitigation**: Áp dụng Parameterized Queries (`PreparedStatement` trong Java), Output Encoding (Thymeleaf auto-escaping `th:text`), Input Sanitization và cấu hình bảo mật HttpOnly Cookie / CSP.
-4. **Verification**: Kiểm thử lại toàn bộ kịch bản để chứng minh lỗ hổng đã được vá triệt để.
+Lab gồm hai phiên bản của cùng một website bán đồ công nghệ viết bằng Java (Spring Boot, Thymeleaf), dùng chung một cơ sở dữ liệu MariaDB: **bản lỗi** ở cổng 8080 và **bản vá** ở cổng 8081. Hai bản giống nhau về giao diện và đường dẫn, chỉ khác cách viết mã, nên cùng một payload gửi vào hai bản cho hai kết quả trái ngược. Toàn bộ lab chạy cục bộ bằng Docker Compose, mọi cổng chỉ mở trên `127.0.0.1`.
 
----
+## Tóm tắt kết quả
 
-## 🚀 2. Yêu cầu Công cụ & Hướng dẫn Khởi chạy Lab Môi trường
+Đã chạy thử trên lab ngày 19/11/2026:
 
-### 2.1 Yêu cầu công cụ và phiên bản tiên quyết:
-- **Java Development Kit (JDK):** Java 17 LTS (khuyến nghị Eclipse Temurin 17; hỗ trợ JDK 17, 21, 26).
-- **Apache Maven:** Phiên bản 3.9+ (để biên dịch và đóng gói ứng dụng Spring Boot).
-- **Docker & Docker Compose:** Docker Engine 24.x trở lên, Docker Compose v2 trở lên (hoặc Docker Desktop 4.x).
-- **Python:** Python 3.9+ (phục vụ máy chủ lắng nghe bắt cookie và chạy script kiểm thử tự động).
-- **Cơ sở dữ liệu:** MariaDB 10.5+ hoặc MySQL 8.0+ (đã tích hợp sẵn container Docker).
+| Tấn công | Bản lỗi (8080) | Bản vá (8081) | Biện pháp khắc phục |
+|---|---|---|---|
+| SQLi vượt qua đăng nhập: `admin' -- ` | Vào được tài khoản admin không cần mật khẩu | "Tên đăng nhập hoặc mật khẩu không chính xác!" | Parameterized Query |
+| SQLi UNION ở ô tìm kiếm | Lộ 4 tài khoản, mật khẩu, số thẻ | "Không tìm thấy sản phẩm nào" | Parameterized Query |
+| Reflected XSS qua ô tìm kiếm | Mã chạy, đọc được cookie phiên | Hiện nguyên văn thành chữ | Output Encoding (`th:text`) |
+| Stored XSS qua bình luận, chiếm phiên | Cookie admin bị gửi về cổng 8888, vào được tài khoản admin | Bình luận hiện nguyên văn, không gửi được cookie | Output Encoding, HttpOnly, SameSite, CSP |
 
-### 2.2 Cấu hình môi trường bằng biến môi trường:
-Hệ thống hỗ trợ nạp cấu hình linh hoạt qua biến môi trường (xem tệp mẫu `.env.example` tại thư mục gốc):
-- `SERVER_PORT`: Cổng lắng nghe HTTP (mặc định: `8080` cho app-vulnerable, `8081` cho app-secured).
-- `DB_HOST`: Địa chỉ máy chủ CSDL (`db` khi chạy container, `localhost` khi chạy trực tiếp trên máy host).
-- `DB_PORT`: Cổng kết nối CSDL (mặc định: `3306`).
-- `DB_NAME`: Tên cơ sở dữ liệu (mặc định: `ecommerce_db`).
-- `DB_USER`: Tên tài khoản CSDL (mặc định: `db_user`).
-- `DB_PASS`: Mật khẩu CSDL (mặc định: `P@ssword123`).
+Kiểm thử tự động `mvn test`: bản lỗi đạt 36/36 ca, bản vá đạt 39/39 ca (lần chạy ngày 19/11/2026).
 
-### 2.3 Phương án 1: Khởi chạy toàn bộ hệ thống bằng Docker Compose (Khuyến nghị cho Lab)
-```bash
-# Di chuyển vào thư mục dự án
-cd websec-owasp-sqli-xss
+## 1. Mô hình demo
 
-# Khởi chạy toàn bộ hệ thống ở chế độ nền
-docker compose up -d
+```mermaid
+flowchart LR
+    B[Trình duyệt] -->|HTTP| V[web-vulnerable :8080]
+    B -->|HTTP| S[web-secured :8081]
+    V -->|JDBC| D[(MariaDB :3306)]
+    S -->|JDBC| D
+    B -.->|"GET /steal?cookie=... (chỉ khi XSS chạy ở 8080)"| C[cookie-stealer :8888]
+```
 
-# Xem trạng thái vận hành của các container
+| Thành phần | Công nghệ | Cổng | Vai trò |
+|---|---|---|---|
+| `web-vulnerable` | Spring Boot 3.2.5, Java 17, Thymeleaf, JDBC | 8080 | Bản lỗi, mục tiêu tấn công |
+| `web-secured` | Như trên, thêm `SecurityHeadersFilter` | 8081 | Bản vá, dùng để đối chứng |
+| `db` | MariaDB 10.5 | 3306 (chỉ trong mạng Docker) | CSDL `ecommerce_db` dùng chung |
+| `cookie-stealer` | Python 3.9 | 8888 | Máy chủ của kẻ tấn công, ghi lại cookie bị trộm; chỉ bật khi demo XSS |
+
+Lỗ hổng ở bản 8080 là **cố ý**. Không vá bản 8080; mọi bản vá chỉ làm trong `lab-environment/app-secured/`.
+
+## 2. Chuẩn bị
+
+Công cụ cần có:
+
+- Docker Desktop (Docker Compose v2 trở lên).
+- Trình duyệt Chrome hoặc Edge, dùng DevTools (F12) để xem và sửa cookie khi demo chiếm phiên.
+- Chỉ khi chạy không dùng Docker hoặc chạy kiểm thử: JDK 17 trở lên, Apache Maven 3.9 trở lên.
+- Python 3.9 trở lên để chạy các script `scripts/verify_*.py`.
+
+Cấu hình qua biến môi trường (xem `.env.example`):
+
+| Biến | Ý nghĩa | Mặc định |
+|---|---|---|
+| `SERVER_PORT` | Cổng HTTP của ứng dụng | `8080` (bản lỗi), `8081` (bản vá) |
+| `DB_HOST` | Địa chỉ CSDL | `db` trong Docker, `localhost` khi chạy trực tiếp |
+| `DB_PORT` | Cổng CSDL | `3306` |
+| `DB_NAME` | Tên CSDL | `ecommerce_db` |
+| `DB_USER`, `DB_PASS` | Tài khoản CSDL của lab | `db_user`, `P@ssword123` |
+
+Toàn bộ tài khoản, mật khẩu và số thẻ trong lab là dữ liệu giả.
+
+## 3. Triển khai
+
+### Cách 1: Docker Compose (khuyến nghị)
+
+```powershell
+# 1. Khởi động lab kèm máy chủ hứng cookie (cổng 8888)
+docker compose --profile xss-demo up -d --build
+
+# 2. Đưa CSDL về dữ liệu ban đầu (xóa bình luận độc hại của lần demo trước)
+.\scripts\reset_db.ps1
+
+# 3. Kiểm tra bốn container đã chạy
 docker compose ps
 ```
 
-### 2.4 Phương án 2: Khởi chạy trực tiếp bằng Maven trên máy trạm (Local Development)
-Hai ứng dụng hỗ trợ cơ chế chạy độc lập bằng Maven. Nếu không tìm thấy máy chủ MariaDB ngoài, ứng dụng sẽ tự động kích hoạt CSDL giả lập H2 (MySQL Mode) và nạp dữ liệu hạt giống từ `init.sql`:
+Trên Linux hoặc macOS dùng `scripts/reset_db.sh` thay cho `reset_db.ps1`. Sau khi sửa mã Java hoặc template, dựng lại container, ví dụ `docker compose up -d --build web-secured`; container không tự cập nhật theo mã nguồn.
+
+Địa chỉ truy cập:
+
+- Bản lỗi: http://localhost:8080
+- Bản vá: http://localhost:8081
+- Máy chủ hứng cookie: http://localhost:8888 (chỉ khi bật profile `xss-demo`)
+
+### Cách 2: Maven trực tiếp, không cần Docker
 
 ```bash
-# Khởi chạy ứng dụng chứa lỗ hổng (cổng 8080)
 cd lab-environment/app-vulnerable
 mvn spring-boot:run
 
-# Mở cửa sổ terminal thứ 2 để khởi chạy ứng dụng đã vá (cổng 8081)
+# Cửa sổ terminal thứ hai
 cd lab-environment/app-secured
 mvn spring-boot:run
 ```
 
-### 2.5 Các cổng truy cập dịch vụ:
-- **Web TMĐT dính lỗ hổng (Vulnerable App - Java):** [http://localhost:8080](http://localhost:8080)
-- **Web TMĐT đã vá bảo mật (Secured App - Java):** [http://localhost:8081](http://localhost:8081)
-- **Database (MariaDB/MySQL):** `localhost:3306` (User: `db_user`, Pass: `P@ssword123`, DB: `ecommerce_db`)
-- **Attacker Cookie Stealer Listener (chỉ bật cho demo XSS bằng `docker compose --profile xss-demo up -d`):** [http://localhost:8888](http://localhost:8888)
+Theo mã nguồn (`DbConfig`), nếu không kết nối được MariaDB, ứng dụng tự chuyển sang CSDL H2 trong bộ nhớ và nạp lại `lab-environment/db/init.sql`.
 
----
+### HTTPS cho bản vá (tùy chọn)
 
-## ⚖️ 3. Phân biệt Hai Phiên bản Ứng dụng (Vulnerable vs Secured)
+`docker-compose.tls.yml` bổ sung cấu hình HTTPS cho `web-secured` ở cổng 8443 và bật cờ `Secure` cho cookie phiên. Script `scripts/verify_tls_cookie_secure.py` kiểm tra cấu hình này.
 
-Hai ứng dụng được thiết kế có cùng khung cấu trúc Spring Boot, cùng thực thể dữ liệu (`User`, `Product`, `Comment`) và cùng giao diện giao dịch TMĐT nhằm đảm bảo tính đối sánh công bằng trong các bài đo thực nghiệm. Phần biện pháp bảo vệ được chia tách và triển khai hoàn thiện tuần tự tại các task chuyên sâu:
+## 4. Demo trực tiếp (khoảng 15 phút)
 
-| Tiêu chí đối sánh | Bản chứa lỗ hổng (`app-vulnerable`) | Bản đã vá bảo mật (`app-secured`) | Nhiệm vụ kỹ thuật chịu trách nhiệm |
-|---|---|---|---|
-| **Cổng truy cập HTTP** | Cổng `8080` (`SERVER_PORT=8080`) | Cổng `8081` (`SERVER_PORT=8081`) | `CORE-01`, `CORE-02` |
-| **Tên ứng dụng Spring** | `websec-app-vulnerable` | `websec-app-secured` | `CORE-01`, `CORE-02` |
-| **Xác thực và Đăng nhập** | Nối chuỗi SQL thô (`Statement`) -> Dính SQLi Auth Bypass | Câu lệnh tham số hóa (`PreparedStatement`) chống SQLi | `CORE-04`, `CORE-05`, `SQLI-05` |
-| **Tìm kiếm & Chi tiết SP** | Ghép chuỗi SQL trực tiếp (`LIKE '%keyword%'`) | Tham số hóa toàn bộ câu truy vấn qua `PreparedStatement` | `SQLI-02`, `SQLI-03`, `SQLI-08`, `SQLI-09` |
-| **Kết xuất giao diện HTML** | Dùng `th:utext` (không escape thẻ) -> Dính XSS thực thi mã | Dùng `th:text` (Thymeleaf auto-escaping chống XSS) | `XSS-02`, `XSS-03`, `XSS-07` |
-| **Bảo vệ Cookie & Phiên** | Cookie `session_token` đặt `HttpOnly=false` (cho phép cướp phiên) | Cookie `SECUREDSESSION` với `HttpOnly` và `SameSite=Strict`. Bật `SESSION_COOKIE_SECURE=true` khi dùng HTTPS | `CORE-05`, `XSS-10` |
-| **Tiêu đề phản hồi an toàn** | Không cấu hình Security Headers | Bộ lọc `SecurityHeadersFilter` bổ sung CSP, X-Frame-Options | `XSS-09` |
-| **Xử lý dữ liệu đầu vào** | Nhận chuỗi thô, không lọc thẻ nguy hiểm | Cắt tỉa khoảng trắng và giới hạn độ dài ký tự bình luận | `XSS-08` |
+Chi tiết từng bước, lời thuyết minh và câu hỏi thường gặp nằm trong [kịch bản demo](docs/bao_cao/kich_ban_demo_sqli_xss.md). Tóm tắt:
 
----
+**Màn 1: SQLi vượt qua đăng nhập.** Ở `/login` của 8080, nhập tên đăng nhập `admin' -- ` (có dấu cách ở cuối) và mật khẩu bất kỳ. Dấu `'` đóng chuỗi sớm, `-- ` chú thích phần kiểm tra mật khẩu, nên đăng nhập thành công vào admin.
 
-## 📂 4. Cấu trúc Thư mục
+**Màn 2: SQLi trích xuất dữ liệu.** Ở `/search` của 8080, nhập `'` để thấy lỗi MySQL, rồi nhập:
 
-```text
-├── README.md                      # Hướng dẫn tổng thể, công cụ, khởi chạy và phân biệt 2 app
-├── docker-compose.yml             # Khởi tạo toàn bộ môi trường Lab Docker (3 dịch vụ mặc định)
-├── .env.example                   # Tệp mẫu cấu hình biến môi trường kết nối CSDL và cổng
-├── .gitignore                     # Cấu hình bỏ qua các file rác, target & .m2
-│
-├── lab-environment/               # Môi trường ứng dụng
-│   ├── db/
-│   │   └── init.sql               # Script khởi tạo cơ sở dữ liệu mẫu và cơ chế hoàn nguyên
-│   ├── app-vulnerable/            # Ứng dụng Java dính lỗi (SQLi, XSS) - Cổng 8080
-│   │   ├── pom.xml
-│   │   └── src/main/
-│   │       ├── java/com/uth/websec/ (VulnerableApp, Controller, Config, Model)
-│   │       └── resources/templates/ (File .html dùng th:utext unescaped)
-│   └── app-secured/               # Ứng dụng Java đã vá lỗi - Cổng 8081
-│       ├── pom.xml
-│       └── src/main/
-│           ├── java/com/uth/websec/ (SecuredApp, PreparedStatement, SecurityHeaders)
-│           └── resources/templates/ (File .html dùng th:text auto-escaped)
-│
-├── scripts/                       # Bộ công cụ tự động hóa lab
-│   ├── reset_db.ps1               # Script PowerShell hoàn nguyên dữ liệu CSDL (Windows)
-│   ├── reset_db.sh                # Script Bash hoàn nguyên dữ liệu CSDL (Linux/macOS)
-│   └── verify_infra06.py          # Script kiểm thử tích hợp 15 kịch bản tự động
-│
-├── exploits/                      # Kịch bản và công cụ tấn công demo
-│   ├── sqli/                      # Payload bypass login, Union-based, SQLMap
-│   └── xss/                       # Payload Stored/Reflected XSS + Server hứng Cookie
-│
-└── docs/                          # Hồ sơ nghiệm thu & tài liệu báo cáo
-    ├── tasks/                     # Hồ sơ nghiệm thu chi tiết từng task Jira (INFRA, CORE...)
-    ├── bao_cao/                   # Khung sườn file Word báo cáo UTH
-    └── slides/                    # Hướng dẫn và dàn ý Slide 25-40 trang
+```
+zzz' UNION SELECT 1, username, password, credit_card FROM users -- 
 ```
 
----
+Danh sách "sản phẩm" trả về là bảng `users` kèm mật khẩu và số thẻ.
 
-## 👥 5. Phân công Công việc Nhóm
+**Màn 3: XSS chiếm phiên.** Chia hai vai: cửa sổ ẩn danh là kẻ tấn công (không biết mật khẩu), cửa sổ thường là admin.
+
+1. Kẻ tấn công dò ô tìm kiếm bằng `<b>test</b>` rồi `<script>alert(document.cookie)</script>`.
+2. Kẻ tấn công gửi bình luận chứa mã trộm cookie vào `/product?id=1` (không cần đăng nhập).
+3. Admin đăng nhập bằng mật khẩu thật, mở trang sản phẩm đó.
+4. Theo dõi cookie bị trộm: `docker logs -f --tail 0 websec_cookie_stealer`.
+5. Kẻ tấn công dán `session_token` vừa nhận vào F12 → Application → Cookies, tải lại trang và vào được tài khoản admin.
+
+**Đối chứng ở 8081.** Chạy lại đúng các payload trên cổng 8081: tất cả bị chặn. Sau buổi demo chạy lại `scripts/reset_db.ps1`.
+
+Các payload mẫu nằm trong `exploits/sqli/` và `exploits/xss/`.
+
+## 5. Khác biệt giữa hai phiên bản
+
+| Tiêu chí | Bản lỗi (`app-vulnerable`, 8080) | Bản vá (`app-secured`, 8081) |
+|---|---|---|
+| Truy vấn SQL | Nối chuỗi, dùng `Statement` | `PreparedStatement` với tham số `?` |
+| Hiển thị dữ liệu người dùng | `th:utext` (không mã hóa) | `th:text` (mã hóa HTML) |
+| Cookie phiên | `session_token`, `HttpOnly=false`, token là Base64 của tên đăng nhập ghép hậu tố cố định | `SECUREDSESSION`, `HttpOnly`, `SameSite=Strict`; `SESSION_COOKIE_SECURE=true` khi chạy HTTPS |
+| Header bảo mật | Không có | `SecurityHeadersFilter`: CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy |
+| Thông báo lỗi CSDL | Hiện nguyên văn lên trang | Chỉ ghi log, trang lỗi không lộ chi tiết |
+| Đầu vào | Nhận chuỗi thô | Chặn ký tự điều khiển, giới hạn độ dài bình luận, chuẩn hóa địa chỉ chuyển hướng |
+
+## 6. Cấu trúc thư mục
+
+```text
+├── README.md
+├── docker-compose.yml          # Lab Docker: db, web-vulnerable, web-secured, cookie-stealer (profile xss-demo)
+├── docker-compose.tls.yml      # Bổ sung HTTPS cho bản vá (tùy chọn)
+├── .env.example                # Mẫu biến môi trường
+│
+├── lab-environment/
+│   ├── db/init.sql             # Lược đồ và dữ liệu mẫu
+│   ├── app-vulnerable/         # Spring Boot bản lỗi (8080)
+│   └── app-secured/            # Spring Boot bản vá (8081), thêm gói filter
+│
+├── exploits/
+│   ├── sqli/                   # Payload bypass đăng nhập, payload UNION, script sqlmap
+│   └── xss/                    # Payload XSS, máy chủ hứng cookie
+│
+├── scripts/                    # reset_db.ps1 / reset_db.sh, các script verify_*.py
+└── docs/
+    ├── bao_cao/                # Báo cáo Word, kịch bản demo, tài liệu trình bày
+    ├── slides/                 # Hướng dẫn làm slide
+    └── tasks/                  # Hồ sơ nghiệm thu từng task
+```
+
+## 7. Tài liệu
+
+- [Kịch bản demo SQL Injection và XSS](docs/bao_cao/kich_ban_demo_sqli_xss.md): các bước, lời thuyết minh, câu hỏi thường gặp.
+- [Cách trình bày phần SQL Injection](docs/bao_cao/cach_trinh_bay_sql_injection.md): hỏi đáp riêng cho màn đăng nhập.
+- [Báo cáo theo mẫu Nhóm 44](docs/bao_cao/bao_cao_sqli_xss_theo_mau.docx): bản Word đầy đủ.
+- [Thuyết minh thiết kế](docs/bao_cao/thuyet_minh_thiet_ke_websec.docx): kiến trúc, lược đồ lớp, cơ sở dữ liệu.
+- [Đề cương báo cáo](docs/bao_cao/DE_CUONG_BAO_CAO_CHI_TIET_UTH.md) và [hướng dẫn làm slide](docs/slides/HUONG_DAN_LAM_SLIDE_UTH.md).
+- [Hồ sơ nghiệm thu từng task](docs/tasks/), kèm log bằng chứng trong `docs/tasks/logs/`.
+
+## 8. Kiểm tra và giới hạn
+
+Chạy kiểm thử của từng ứng dụng:
+
+```bash
+cd lab-environment/app-vulnerable && mvn test
+cd lab-environment/app-secured && mvn test
+```
+
+Bản lỗi có bộ kiểm thử khẳng định lỗ hổng vẫn khai thác được; bản vá có bộ kiểm thử khẳng định cùng payload bị chặn. Các script `scripts/verify_*.py` gửi yêu cầu HTTP thật tới lab đang chạy và ghi bằng chứng vào `docs/tasks/logs/`.
+
+Giới hạn:
+
+- Mật khẩu vẫn lưu dạng chữ thường ở cả hai bản để màn UNION thấy rõ hậu quả; hệ thống thật phải băm bằng bcrypt hoặc Argon2.
+- Chưa có CSRF token, giới hạn số lần đăng nhập sai, tài khoản CSDL quyền tối thiểu.
+- Phạm vi dừng ở SQLi dạng In-band và XSS dạng Reflected, Stored; chưa demo Blind SQLi và DOM-based XSS.
+- Hộp thoại `alert` của Reflected XSS chưa được kiểm chứng trên Chrome thật; script `exploits/sqli/run_sqlmap_demo.sh` chưa được chạy thử.
+
+## 9. Phân công công việc nhóm
 
 | Thành viên | Vai trò | Nhiệm vụ chính |
-| :--- | :--- | :--- |
-| **Thành viên 1** | Trưởng nhóm / Lab Lead | Quản lý repo, dựng Docker, thực hiện demo SQL Injection (Bypass + Union). |
-| **Thành viên 2** | Security Engineer | Thực hiện demo XSS (Cướp cookie), triển khai code vá lỗi và cấu hình bảo mật Java. |
-| **Thành viên 3** | Kỹ sư Tài liệu / Báo cáo | Viết tài liệu Báo cáo Word theo chuẩn 4 phần của trường UTH. |
-| **Thành viên 4** | Thiết kế Slide & Thuyết trình | Soạn bộ slide 25-40 trang (Font 32/26 chuẩn UTH), quay video demo dự phòng. |
+|---|---|---|
+| Thành viên 1 | Trưởng nhóm, Lab Lead | Quản lý repo, dựng Docker, demo SQL Injection |
+| Thành viên 2 | Security Engineer | Demo XSS, triển khai mã vá và cấu hình bảo mật |
+| Thành viên 3 | Tài liệu và báo cáo | Viết báo cáo Word theo mẫu của trường |
+| Thành viên 4 | Slide và thuyết trình | Soạn slide 25 đến 40 trang, quay video demo dự phòng |
 
----
+## 10. Cảnh báo pháp lý và đạo đức
 
-## ⚠️ 6. Cảnh báo Pháp lý & Đạo đức
-Tất cả các kịch bản và mã tấn công trong dự án này chỉ được phép thực thi trong môi trường Lab cục bộ (Docker / VirtualBox) phục vụ mục đích học tập và nghiên cứu học phần tại trường UTH. Nghiêm cấm mọi hành vi thử nghiệm trái phép trên các hệ thống bên ngoài.
+Mọi kịch bản và mã tấn công trong dự án chỉ được thực thi trong môi trường lab cục bộ phục vụ học tập và nghiên cứu tại UTH. Payload chỉ gửi tới `localhost:8080` và `localhost:8081`. Nghiêm cấm thử nghiệm trên hệ thống bên ngoài khi chưa được phép.
